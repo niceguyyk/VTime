@@ -79,18 +79,20 @@ function requireCsrf(req, res, next) {
 
 function validateStaff(body) {
   const name = typeof body?.name === 'string' ? body.name.trim() : '';
+  const role = typeof body?.role === 'string' ? body.role.trim() : 'Staff';
   const discordId = typeof body?.discordId === 'string' ? body.discordId.trim() : '';
   const timeZone = typeof body?.timeZone === 'string' ? body.timeZone.trim() : '';
   const availableFrom = typeof body?.availableFrom === 'string' ? body.availableFrom : '13:00';
   const availableUntil = typeof body?.availableUntil === 'string' ? body.availableUntil : '21:00';
   const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
   if (!name || name.length > 80) throw new Error('Name must be 1–80 characters.');
+  if (!role || role.length > 60) throw new Error('Role must be 1–60 characters.');
   if (!/^\d{17,20}$/.test(discordId)) throw new Error('Discord ID must be 17–20 digits.');
   if (!isValidTimeZone(timeZone)) throw new Error('Choose a valid city, abbreviation, or UTC offset.');
   if (!timePattern.test(availableFrom) || !timePattern.test(availableUntil) || availableFrom >= availableUntil) {
     throw new Error('Choose a valid availability window within one day.');
   }
-  return { name, discordId, timeZone, availableFrom, availableUntil };
+  return { name, role, discordId, timeZone, availableFrom, availableUntil };
 }
 
 function sendDatabaseError(error, res) {

@@ -98,6 +98,7 @@ function renderStaff() {
     const top = addText(card, 'div', 'staff-top', '');
     const identity = addText(top, 'div', '', '');
     addText(identity, 'div', 'staff-name', person.name);
+    addText(identity, 'div', 'staff-role', person.role || 'Staff');
     addText(identity, 'div', 'staff-id', `Discord: ${person.discord_id}`);
     const time = currentTime(person.time_zone);
     addText(top, 'div', 'staff-time', time);
@@ -133,6 +134,7 @@ function resetForm() {
 function editStaff(person) {
   editingId = person.id;
   $('staffName').value = person.name;
+  $('staffRole').value = person.role || 'Staff';
   $('discordId').value = person.discord_id;
   $('staffZone').value = person.time_zone;
   $('availableFrom').value = person.available_from.slice(0, 5);
@@ -225,6 +227,7 @@ $('staffForm').addEventListener('submit', async event => {
   showError('formError');
   const payload = {
     name: $('staffName').value,
+    role: $('staffRole').value,
     discordId: $('discordId').value,
     timeZone: $('staffZone').value,
     availableFrom: $('availableFrom').value,
