@@ -3,6 +3,19 @@ let csrf = '';
 let staff = [];
 let totalStaff = 0;
 let editingId = null;
+const ZONE_COOKIE = 'vtime_timezone';
+
+function savedTimeZone() {
+  const raw = document.cookie.split(';').map(part => part.trim()).find(part => part.startsWith(`${ZONE_COOKIE}=`));
+  if (!raw) return '';
+  try { return decodeURIComponent(raw.slice(ZONE_COOKIE.length + 1)); }
+  catch { return ''; }
+}
+
+function saveTimeZone(zone) {
+  if (!zone) return;
+  document.cookie = `${ZONE_COOKIE}=${encodeURIComponent(zone)}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
+}
 
 function localDate() {
   const today = new Date();
@@ -257,6 +270,7 @@ async function loadAvailability() {
   try {
     const query = new URLSearchParams({ date, timeZone: zone, group: $('roleFilter').value });
     renderMeeting(await api(`/api/availability?${query}`));
+    saveTimeZone(zone);
     showError('panelError');
   } catch (error) { showError('panelError', error.message); }
 }
@@ -320,7 +334,7 @@ $('viewerZoneCustom').addEventListener('change', loadAvailability);
 setInterval(renderStaff, 60 * 1000);
 fillTimeZones();
 $('meetingDate').value = localDate();
-setChoice('viewerZone', 'viewerZoneCustom', Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+setChoice('viewerZone', 'viewerZoneCustom', savedTimeZone() || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
 api('/api/me').then(data => {
   if (!data.authenticated) return showLogin();
   csrf = data.csrf;

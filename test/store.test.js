@@ -56,3 +56,23 @@ test('existing staff receive a default role without losing data', () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('login sessions survive a database reopen and can be revoked', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'vtime-session-'));
+  const filename = path.join(dir, 'staff.sqlite');
+  try {
+    let store = openStore(filename);
+    store.addSession('hashed-session', 'csrf-token', 9000);
+    store.close();
+    store = openStore(filename);
+    assert.deepEqual(store.session('hashed-session'), { csrf: 'csrf-token', expires_at: 9000 });
+    assert.equal(store.removeExpiredSessions(8999), 0);
+    assert.equal(store.removeSession('hashed-session'), true);
+    assert.equal(store.session('hashed-session'), undefined);
+    store.addSession('expired-session', 'csrf-token', 9000);
+    assert.equal(store.removeExpiredSessions(9000), 1);
+    store.close();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

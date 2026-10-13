@@ -22,6 +22,43 @@ const toSelect = $('toZone');
 const error = $('error');
 let copyText = '';
 let lastInstant = null;
+const ZONE_COOKIE = 'vtime_timezone';
+
+function savedTimeZone() {
+  const raw = document.cookie.split(';').map(part => part.trim()).find(part => part.startsWith(`${ZONE_COOKIE}=`));
+  if (!raw) return '';
+  try { return decodeURIComponent(raw.slice(ZONE_COOKIE.length + 1)); }
+  catch { return ''; }
+}
+
+function saveTimeZone(zone) {
+  let saved = zone;
+  if (zone.startsWith('fixed:')) {
+    const minutes = Number(zone.slice(6));
+    saved = `UTC${minutes < 0 ? '-' : '+'}${Math.floor(Math.abs(minutes) / 60)}${Math.abs(minutes) % 60 ? ':' + String(Math.abs(minutes) % 60).padStart(2, '0') : ''}`;
+  }
+  document.cookie = `${ZONE_COOKIE}=${encodeURIComponent(saved)}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
+}
+
+function converterZone(zone) {
+  if (zone.startsWith('fixed:')) return zone;
+  const abbreviations = { UTC: 0, GMT: 0, EDT: -240, EST: -300, MDT: -360, MST: -420, PDT: -420, PST: -480, CET: 60, CEST: 120 };
+  if (Object.hasOwn(abbreviations, zone)) return `fixed:${abbreviations[zone]}`;
+  const offset = /^UTC([+-])(\d{1,2})(?::([0-5]\d))?$/i.exec(zone);
+  if (offset) return `fixed:${(offset[1] === '-' ? -1 : 1) * (Number(offset[2]) * 60 + Number(offset[3] || 0))}`;
+  try { new Intl.DateTimeFormat('en-US', { timeZone: zone }); return zone; }
+  catch { return ''; }
+}
+
+function restoreTimeZone() {
+  const zone = converterZone(savedTimeZone());
+  if (!zone) return;
+  if (![...toSelect.options].some(option => option.value === zone)) {
+    const group = toSelect.querySelector(zone.startsWith('fixed:') ? 'optgroup:last-child' : 'optgroup:first-child');
+    group.append(new Option(zone.startsWith('fixed:') ? savedTimeZone() : zone, zone));
+  }
+  toSelect.value = zone;
+}
 
 for (const select of [fromSelect, toSelect]) {
   for (const group of zones) {
@@ -41,6 +78,7 @@ const now = new Date();
 dateInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 fromSelect.value = 'fixed:-240';
 toSelect.value = 'fixed:60';
+restoreTimeZone();
 
 function partsAt(instant, zone) {
   const formatter = new Intl.DateTimeFormat('en-GB', {
@@ -125,6 +163,7 @@ function update() {
 }
 
 for (const element of [dateInput, timeInput, fromSelect, toSelect]) element.addEventListener('change', update);
+toSelect.addEventListener('change', () => saveTimeZone(toSelect.value));
 for (const element of [dateInput, timeInput]) element.addEventListener('input', update);
 $('swap').addEventListener('click', () => {
   const previous = fromSelect.value;

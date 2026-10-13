@@ -10,6 +10,8 @@ The **Show staff** filter offers all staff, all ranks starting with `Senior`, le
 
 The browser never receives the database file or admin password. The Node server owns sessions, validates input, and writes to the local database.
 
+VTime remembers the selected viewer time zone in a browser cookie for one year and shares it between the converter and staff panel. Signing in creates an HTTP-only session cookie valid for 30 days; only a hash of its random session ID is stored in SQLite, so the login survives a server restart. Signing out revokes the session.
+
 ## Run locally
 
 Requires Node.js 22 or newer.

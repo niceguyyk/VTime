@@ -1,4 +1,4 @@
-import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
+import { randomBytes, createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import express from 'express';
@@ -32,9 +32,8 @@ app.use((req, res, next) => {
   next();
 });
 
-const sessions = new Map();
 const attempts = new Map();
-const SESSION_MS = 8 * 60 * 60 * 1000;
+const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 const LOCK_MS = 15 * 60 * 1000;
 
 function digest(value) {
@@ -50,12 +49,17 @@ function cookieValue(req, name) {
   return cookie.split(';').map(part => part.trim()).find(part => part.startsWith(`${name}=`))?.slice(name.length + 1) || '';
 }
 
+function sessionHash(sid) {
+  return createHmac('sha256', password).update(sid).digest('hex');
+}
+
 function sessionFor(req) {
   const sid = cookieValue(req, 'vtime_session');
-  const session = sessions.get(sid);
+  if (!/^[a-f0-9]{64}$/.test(sid)) return null;
+  const session = store.session(sessionHash(sid));
   if (!session) return null;
-  if (session.expires <= Date.now()) {
-    sessions.delete(sid);
+  if (session.expires_at <= Date.now()) {
+    store.removeSession(sessionHash(sid));
     return null;
   }
   return { sid, ...session };
@@ -133,13 +137,14 @@ app.post('/api/login', (req, res) => {
   attempts.delete(ip);
   const sid = randomBytes(32).toString('hex');
   const csrf = randomBytes(24).toString('hex');
-  sessions.set(sid, { csrf, expires: Date.now() + SESSION_MS });
+  store.removeExpiredSessions(Date.now());
+  store.addSession(sessionHash(sid), csrf, Date.now() + SESSION_MS);
   setSessionCookie(res, sid, Math.floor(SESSION_MS / 1000));
   res.json({ authenticated: true, csrf });
 });
 
 app.post('/api/logout', requireLogin, requireCsrf, (req, res) => {
-  sessions.delete(req.session.sid);
+  store.removeSession(sessionHash(req.session.sid));
   setSessionCookie(res, '', 0);
   res.json({ ok: true });
 });
