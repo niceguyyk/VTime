@@ -1,0 +1,152 @@
+const zones = [
+  { group: 'Beliebte Zeitzonen', items: [
+    ['America/New_York', 'New York · ET'], ['Europe/Berlin', 'Berlin · MEZ/MESZ'], ['Europe/London', 'London · GMT/BST'],
+    ['America/Los_Angeles', 'Los Angeles · PT'], ['Asia/Tokyo', 'Tokio · JST'], ['Asia/Dubai', 'Dubai · GST'],
+    ['Asia/Kolkata', 'Mumbai · IST'], ['Australia/Sydney', 'Sydney · AEST/AEDT']
+  ]},
+  { group: 'Feste Abkürzungen', items: [
+    ['fixed:-240', 'EDT · UTC−4'], ['fixed:-300', 'EST · UTC−5'], ['fixed:-360', 'CST · UTC−6'],
+    ['fixed:-420', 'MST · UTC−7'], ['fixed:-480', 'PST · UTC−8'], ['fixed:0', 'UTC · UTC+0']
+  ]},
+  { group: 'Feste UTC-Offsets', items: Array.from({ length: 27 }, (_, i) => {
+    const h = i - 12;
+    return [`fixed:${h * 60}`, `UTC${h < 0 ? '−' : '+'}${Math.abs(h)}`];
+  }) }
+];
+
+const $ = id => document.getElementById(id);
+const dateInput = $('date');
+const timeInput = $('time');
+const fromSelect = $('fromZone');
+const toSelect = $('toZone');
+const error = $('error');
+let copyText = '';
+let lastInstant = null;
+
+for (const select of [fromSelect, toSelect]) {
+  for (const group of zones) {
+    const optgroup = document.createElement('optgroup');
+    optgroup.label = group.group;
+    for (const [value, label] of group.items) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      optgroup.append(option);
+    }
+    select.append(optgroup);
+  }
+}
+
+const now = new Date();
+dateInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+fromSelect.value = 'fixed:-240';
+toSelect.value = 'Europe/Berlin';
+
+function partsAt(instant, zone) {
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+  });
+  const p = Object.fromEntries(formatter.formatToParts(instant).filter(x => x.type !== 'literal').map(x => [x.type, Number(x.value)]));
+  return [p.year, p.month, p.day, p.hour, p.minute, p.second];
+}
+
+function offsetAt(ms, zone) {
+  if (zone.startsWith('fixed:')) return Number(zone.slice(6));
+  const p = partsAt(new Date(ms), zone);
+  return Math.round((Date.UTC(...[p[0], p[1] - 1, p[2], p[3], p[4], p[5]]) - ms) / 60000);
+}
+
+function sourceToInstant(y, m, d, h, minute, zone) {
+  const naive = Date.UTC(y, m - 1, d, h, minute);
+  if (zone.startsWith('fixed:')) return { ms: naive - Number(zone.slice(6)) * 60000, ambiguous: false };
+  const offsets = new Set([-129600000, 0, 129600000].map(delta => offsetAt(naive + delta, zone)));
+  const matches = [...offsets].map(offset => naive - offset * 60000).filter(ms => {
+    const p = partsAt(new Date(ms), zone);
+    return p[0] === y && p[1] === m && p[2] === d && p[3] === h && p[4] === minute;
+  }).sort((a, b) => a - b);
+  if (!matches.length) throw new Error('Diese Uhrzeit existiert wegen der Zeitumstellung in der gewählten Zeitzone nicht. Bitte wähle eine andere Uhrzeit.');
+  return { ms: matches[0], ambiguous: matches.length > 1 };
+}
+
+function offsetLabel(minutes) {
+  const sign = minutes < 0 ? '−' : '+';
+  const absolute = Math.abs(minutes);
+  return `UTC${sign}${Math.floor(absolute / 60)}${absolute % 60 ? ':' + String(absolute % 60).padStart(2, '0') : ''}`;
+}
+
+function targetParts(ms, zone) {
+  if (zone.startsWith('fixed:')) return partsAt(new Date(ms + Number(zone.slice(6)) * 60000), 'UTC');
+  return partsAt(new Date(ms), zone);
+}
+
+function formatDate(p) {
+  const local = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
+  return new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(local);
+}
+
+function update() {
+  error.hidden = true;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateInput.value);
+  const tm = /^(\d{2}):(\d{2})$/.exec(timeInput.value);
+  if (!match || !tm) return;
+  const [y, m, d] = match.slice(1).map(Number);
+  const [h, minute] = tm.slice(1).map(Number);
+  try {
+    const converted = sourceToInstant(y, m, d, h, minute, fromSelect.value);
+    lastInstant = converted.ms;
+    const p = targetParts(converted.ms, toSelect.value);
+    const resultTime = `${String(p[3]).padStart(2, '0')}:${String(p[4]).padStart(2, '0')}`;
+    const resultDate = formatDate(p);
+    const sourceOffset = offsetAt(converted.ms, fromSelect.value);
+    const targetOffset = offsetAt(converted.ms, toSelect.value);
+    const difference = targetOffset - sourceOffset;
+    const diffText = difference === 0 ? 'Gleiche Uhrzeit' : `${Math.abs(difference / 60).toLocaleString('de-DE', { maximumFractionDigits: 2 })} Std. ${difference > 0 ? 'voraus' : 'zurück'}`;
+    $('resultTime').textContent = resultTime;
+    $('resultDate').textContent = resultDate;
+    $('fromDetail').textContent = `${offsetLabel(sourceOffset)} am gewählten Datum`;
+    $('toDetail').textContent = `${offsetLabel(targetOffset)} am gewählten Datum`;
+    $('resultFoot').textContent = `${fromSelect.selectedOptions[0].textContent} → ${toSelect.selectedOptions[0].textContent} · ${diffText}${converted.ambiguous ? ' · Bei doppelter Uhrzeit wurde die erste gewählt.' : ''}`;
+    copyText = `${resultTime} · ${resultDate} (${toSelect.selectedOptions[0].textContent})`;
+    const result = document.querySelector('.result');
+    result.classList.remove('pop');
+    void result.offsetWidth;
+    result.classList.add('pop');
+    setTimeout(() => result.classList.remove('pop'), 450);
+  } catch (e) {
+    lastInstant = null;
+    $('resultTime').textContent = '–';
+    $('resultDate').textContent = 'Bitte Eingabe prüfen';
+    $('resultFoot').textContent = 'Sommerzeit wird automatisch berücksichtigt.';
+    error.textContent = e.message;
+    error.hidden = false;
+    copyText = '';
+  }
+}
+
+for (const element of [dateInput, timeInput, fromSelect, toSelect]) element.addEventListener('change', update);
+for (const element of [dateInput, timeInput]) element.addEventListener('input', update);
+$('swap').addEventListener('click', () => {
+  const previous = fromSelect.value;
+  fromSelect.value = toSelect.value;
+  toSelect.value = previous;
+  if (lastInstant !== null) {
+    const p = targetParts(lastInstant, fromSelect.value);
+    dateInput.value = `${p[0]}-${String(p[1]).padStart(2, '0')}-${String(p[2]).padStart(2, '0')}`;
+    timeInput.value = `${String(p[3]).padStart(2, '0')}:${String(p[4]).padStart(2, '0')}`;
+  }
+  update();
+});
+$('copy').addEventListener('click', async () => {
+  if (!copyText) return;
+  try {
+    await navigator.clipboard.writeText(copyText);
+    const label = $('copy').querySelector('span');
+    label.textContent = 'Kopiert!';
+    setTimeout(() => label.textContent = 'Kopieren', 1800);
+  } catch {
+    error.textContent = 'Kopieren ist in diesem Browser nicht verfügbar.';
+    error.hidden = false;
+  }
+});
+update();
