@@ -21,7 +21,7 @@ The database is created automatically at `DB_PATH` (default: `./data/vtime.sqlit
 
 ## VyronHosting deployment
 
-The live site is **[vtime.vyronhosting.com](https://vtime.vyronhosting.com)**. The existing Ubuntu node `vtime` runs this repository from `/opt/vtime` with the [systemd unit](deploy/vtime.service) and [Nginx proxy](deploy/vtime.nginx.conf). Node binds to `127.0.0.1:3000`; Nginx listens on port 80 inside the guest. A dedicated Cloudflare Tunnel connects the hostname to Nginx using the [tunnel service](deploy/vtime-cloudflared.service).
+The live site is **[vtime.vyronhosting.com](https://vtime.vyronhosting.com)**, with **[vtime-app.vyronhosting.com](https://vtime-app.vyronhosting.com)** as an alternate address while DNS caches update. The existing Ubuntu node `vtime` runs this repository from `/opt/vtime` with the [systemd unit](deploy/vtime.service) and [Nginx proxy](deploy/vtime.nginx.conf). Node binds to `127.0.0.1:3000`; Nginx listens on port 80 inside the guest. A dedicated Cloudflare Tunnel connects both hostnames to Nginx using the [tunnel service](deploy/vtime-cloudflared.service).
 
 The database lives at `/var/lib/vtime/vtime.sqlite`. Systemd creates that writable directory for the `vtime` service. Keep `/etc/vtime/vtime.env` readable only by root and set `ADMIN_PASSWORD` there. The SQLite database and tunnel token stay on the server and are never committed to Git.
 
