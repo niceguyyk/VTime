@@ -6,7 +6,7 @@ A minimal, dark time zone converter with a private staff meeting planner. The pu
 
 The password-protected panel at `/admin` stores each staff member's name, role, Discord ID, time zone, and usual hours in a **SQLite database on the VTime server**. Roles must be selected from the configured staff rank list; free-text roles are no longer accepted. Older entries keep their saved role until edited, when a current rank must be chosen. Time zones are grouped into short fixed zones and daylight-saving-aware city zones; custom zones can also be entered. Hours default to **13:00–21:00 in each person's local time** and can be edited. Time zones accept cities, fixed abbreviations such as `EDT`, `MDT`, and `CET`, or offsets such as `UTC+1` and `UTC+5:30`. Abbreviations and UTC offsets stay fixed; city zones adjust for daylight saving time. The panel shows current local times and finds meeting windows when the selected staff group is likely available on a chosen date, displayed in your time zone. These are estimates from saved hours, not live calendar or Discord presence.
 
-The **Show staff** filter offers all staff, all ranks starting with `Senior`, and leadership ranks containing `Head`, `Director`, or `Overseer`. It filters both the staff list and the meeting overlap calculation.
+The **Show staff** filter offers all staff, all ranks starting with `Senior`, leadership ranks containing `Head`, `Director`, or `Overseer`, and each department separately: Moderation, Administration, Internal Affairs, Management, Directorate, and Overseer. It filters both the staff list and the meeting overlap calculation.
 
 The browser never receives the database file or admin password. The Node server owns sessions, validates input, and writes to the local database.
 

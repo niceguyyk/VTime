@@ -1,25 +1,19 @@
-export const STAFF_ROLES = Object.freeze([
-  'Trial Moderator',
-  'Moderator',
-  'Senior Moderator',
-  'Head Moderator',
-  'Administrator',
-  'Senior Administrator',
-  'Head Administrator',
-  'Internal Affairs Agent',
-  'Senior Internal Affairs Agent',
-  'Internal Affairs Agent Director',
-  'Managment',
-  'Senior Managment',
-  'Managment Director',
-  'Assistaint Director',
-  'Director',
-  'Deputy Director',
-  'Overseer',
-  'Deputy Overseer'
-]);
+const DEPARTMENT_ROLES = Object.freeze({
+  moderation: ['Trial Moderator', 'Moderator', 'Senior Moderator', 'Head Moderator'],
+  administration: ['Administrator', 'Senior Administrator', 'Head Administrator'],
+  'internal-affairs': ['Internal Affairs Agent', 'Senior Internal Affairs Agent', 'Internal Affairs Agent Director'],
+  management: ['Managment', 'Senior Managment', 'Managment Director'],
+  directorate: ['Assistaint Director', 'Director', 'Deputy Director'],
+  oversight: ['Overseer', 'Deputy Overseer']
+});
 
-export const ROLE_GROUPS = Object.freeze(['all', 'senior', 'leadership']);
+export const STAFF_ROLES = Object.freeze(Object.values(DEPARTMENT_ROLES).flat());
+
+export const ROLE_GROUPS = Object.freeze([
+  'all', 'senior', 'leadership',
+  'moderation', 'administration', 'internal-affairs',
+  'management', 'directorate', 'oversight'
+]);
 
 export function isStaffRole(role) {
   return STAFF_ROLES.includes(role);
@@ -34,5 +28,5 @@ export function matchesRoleGroup(role, group) {
   if (!isStaffRole(role)) return false;
   if (group === 'senior') return role.startsWith('Senior ');
   if (group === 'leadership') return role.startsWith('Head ') || role.endsWith('Director') || role.endsWith('Overseer');
-  return false;
+  return DEPARTMENT_ROLES[group]?.includes(role) ?? false;
 }
