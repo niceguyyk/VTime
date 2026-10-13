@@ -141,9 +141,15 @@ $('copy').addEventListener('click', async () => {
   if (!copyText) return;
   try {
     await navigator.clipboard.writeText(copyText);
-    const label = $('copy').querySelector('span');
-    label.textContent = 'Copied!';
-    setTimeout(() => label.textContent = 'Copy', 1800);
+    const button = $('copy');
+    button.setAttribute('aria-label', 'Copied!');
+    button.title = 'Copied!';
+    button.classList.add('copied');
+    setTimeout(() => {
+      button.setAttribute('aria-label', 'Copy result');
+      button.title = 'Copy result';
+      button.classList.remove('copied');
+    }, 1800);
   } catch {
     error.textContent = 'Copying is not available in this browser.';
     error.hidden = false;
