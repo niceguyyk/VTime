@@ -43,18 +43,56 @@ async function api(url, options = {}) {
 }
 
 function fillTimeZones() {
-  const common = ['UTC', 'EDT', 'EST', 'MDT', 'MST', 'PDT', 'PST', 'CET', 'CEST',
-    ...Array.from({ length: 27 }, (_, i) => `UTC${i - 12 < 0 ? '' : '+'}${i - 12}`),
-    'UTC+5:30', 'UTC+9:30', 'Europe/Berlin', 'Europe/London', 'America/New_York',
-    'America/Los_Angeles', 'Asia/Tokyo', 'Asia/Dubai', 'Asia/Kolkata', 'Australia/Sydney'];
-  const all = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [];
-  const zones = [...new Set([...common, ...all])];
-  const list = $('timeZones');
-  for (const zone of zones) {
-    const option = document.createElement('option');
-    option.value = zone;
-    list.append(option);
+  const short = [
+    ['UTC', 'UTC'], ['EDT', 'EDT · UTC−4'], ['EST', 'EST · UTC−5'],
+    ['MDT', 'MDT · UTC−6'], ['MST', 'MST · UTC−7'],
+    ['PDT', 'PDT · UTC−7'], ['PST', 'PST · UTC−8'],
+    ['CET', 'CET · UTC+1'], ['CEST', 'CEST · UTC+2'],
+    ...Array.from({ length: 27 }, (_, i) => {
+      const hour = i - 12;
+      const zone = `UTC${hour < 0 ? '' : '+'}${hour}`;
+      return [zone, zone];
+    }),
+    ...['UTC+5:30', 'UTC+5:45', 'UTC+9:30', 'UTC+12:45'].map(zone => [zone, zone])
+  ];
+  const popularCities = ['America/New_York', 'America/Denver', 'America/Los_Angeles',
+    'Europe/Berlin', 'Europe/London', 'Asia/Tokyo', 'Asia/Dubai',
+    'Asia/Kolkata', 'Australia/Sydney'];
+  const supported = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [];
+  const cities = [...new Set([...popularCities, ...supported])];
+  for (const id of ['staffZone', 'viewerZone']) {
+    const select = $(id);
+    if (id === 'staffZone') select.add(new Option('Select a time zone', '', true, true));
+    const shortGroup = document.createElement('optgroup');
+    shortGroup.label = 'Short time zones & UTC offsets (fixed)';
+    for (const [value, label] of short) shortGroup.append(new Option(label, value));
+    select.append(shortGroup);
+    const cityGroup = document.createElement('optgroup');
+    cityGroup.label = 'City time zones (daylight saving aware)';
+    for (const zone of cities) cityGroup.append(new Option(zone, zone));
+    select.append(cityGroup);
+    select.add(new Option('Custom time zone…', '__custom__'));
   }
+}
+
+function toggleCustom(selectId, customId) {
+  const custom = $(customId);
+  custom.hidden = $(selectId).value !== '__custom__';
+  custom.required = !custom.hidden && selectId !== 'viewerZone';
+}
+
+function choiceValue(selectId, customId) {
+  return $(selectId).value === '__custom__' ? $(customId).value.trim() : $(selectId).value;
+}
+
+function setChoice(selectId, customId, value) {
+  const select = $(selectId);
+  if ([...select.options].some(option => option.value === value)) select.value = value;
+  else {
+    select.value = '__custom__';
+    $(customId).value = value;
+  }
+  toggleCustom(selectId, customId);
 }
 
 function fixedOffset(zone) {
@@ -123,6 +161,8 @@ function renderStaff() {
 function resetForm() {
   editingId = null;
   $('staffForm').reset();
+  toggleCustom('staffRole', 'staffRoleCustom');
+  toggleCustom('staffZone', 'staffZoneCustom');
   $('availableFrom').value = '13:00';
   $('availableUntil').value = '21:00';
   $('formTitle').textContent = 'Add a person';
@@ -134,9 +174,9 @@ function resetForm() {
 function editStaff(person) {
   editingId = person.id;
   $('staffName').value = person.name;
-  $('staffRole').value = person.role || 'Staff';
+  setChoice('staffRole', 'staffRoleCustom', person.role || 'Staff');
   $('discordId').value = person.discord_id;
-  $('staffZone').value = person.time_zone;
+  setChoice('staffZone', 'staffZoneCustom', person.time_zone);
   $('availableFrom').value = person.available_from.slice(0, 5);
   $('availableUntil').value = person.available_until.slice(0, 5);
   $('formTitle').textContent = 'Edit person';
@@ -167,7 +207,7 @@ function renderMeeting(data) {
     const longest = [...data.windows].sort((a, b) => b.minutes - a.minutes)[0];
     addText(box, 'strong', '', `${longest.start} – ${longest.end}`);
     addText(box, 'p', '', `All ${data.total} staff members are likely available during this window in your time zone.`);
-    if (data.recommended) addText(box, 'p', '', `Suggested 1-hour meeting: ${data.recommended.start} – ${oneHourLater(data.recommended.startUtc, $('viewerZone').value)}.`);
+    if (data.recommended) addText(box, 'p', '', `Suggested 1-hour meeting: ${data.recommended.start} – ${oneHourLater(data.recommended.startUtc, choiceValue('viewerZone', 'viewerZoneCustom'))}.`);
     if (data.windows.length > 1) {
       const list = addText(box, 'ul', '', '');
       for (const window of data.windows) addText(list, 'li', '', `${window.start} – ${window.end}`);
@@ -186,7 +226,7 @@ function oneHourLater(iso, zone) {
 
 async function loadAvailability() {
   const date = $('meetingDate').value;
-  const zone = $('viewerZone').value.trim();
+  const zone = choiceValue('viewerZone', 'viewerZoneCustom');
   if (!date || !zone) return;
   try {
     const query = new URLSearchParams({ date, timeZone: zone });
@@ -227,9 +267,9 @@ $('staffForm').addEventListener('submit', async event => {
   showError('formError');
   const payload = {
     name: $('staffName').value,
-    role: $('staffRole').value,
+    role: choiceValue('staffRole', 'staffRoleCustom'),
     discordId: $('discordId').value,
-    timeZone: $('staffZone').value,
+    timeZone: choiceValue('staffZone', 'staffZoneCustom'),
     availableFrom: $('availableFrom').value,
     availableUntil: $('availableUntil').value
   };
@@ -244,11 +284,14 @@ $('staffForm').addEventListener('submit', async event => {
 
 $('cancelEdit').addEventListener('click', resetForm);
 $('meetingDate').addEventListener('change', loadAvailability);
-$('viewerZone').addEventListener('change', loadAvailability);
+$('staffRole').addEventListener('change', () => toggleCustom('staffRole', 'staffRoleCustom'));
+$('staffZone').addEventListener('change', () => toggleCustom('staffZone', 'staffZoneCustom'));
+$('viewerZone').addEventListener('change', () => { toggleCustom('viewerZone', 'viewerZoneCustom'); loadAvailability(); });
+$('viewerZoneCustom').addEventListener('change', loadAvailability);
 setInterval(renderStaff, 60 * 1000);
 fillTimeZones();
 $('meetingDate').value = localDate();
-$('viewerZone').value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+setChoice('viewerZone', 'viewerZoneCustom', Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
 api('/api/me').then(data => {
   if (!data.authenticated) return showLogin();
   csrf = data.csrf;
