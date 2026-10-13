@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#080b17" />
-  <meta name="description" content="VTime rechnet Uhrzeiten weltweit um – mit Sommerzeit, festen UTC-Offsets und einer klaren Ansicht." />
+  <meta name="description" content="A simple time zone converter with daylight saving support and fixed UTC offsets." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23080b17'/%3E%3Cpath d='M32 9 55 32 32 55 9 32Z' fill='none' stroke='%23a88cff' stroke-width='5'/%3E%3Ccircle cx='32' cy='32' r='7' fill='%23a88cff'/%3E%3C/svg%3E" />
-  <title>VTime — Zeit kennt keine Grenzen</title>
+  <title>VTime — Time Zone Converter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -14,48 +14,28 @@
   <script src="app.js" defer></script>
 </head>
 <body>
-  <div class="page-glow page-glow-one" aria-hidden="true"></div>
-  <div class="page-glow page-glow-two" aria-hidden="true"></div>
+  <div class="background-glow" aria-hidden="true"></div>
   <div class="grid-overlay" aria-hidden="true"></div>
-
-  <header class="site-header wrap">
-    <a class="brand" href="#top" aria-label="VTime Startseite"><span class="brand-icon" aria-hidden="true"><span></span></span><span>V<span class="brand-accent">Time</span></span></a>
-    <nav aria-label="Hauptnavigation"><a href="#rechner">Rechner</a><a href="#so-funktionierts">So funktioniert’s</a></nav>
-    <a class="header-cta" href="#rechner">Zeit umrechnen <span aria-hidden="true">↗</span></a>
-  </header>
-
-  <main id="top">
-    <section class="hero wrap">
-      <div class="eyebrow reveal"><span class="pulse-dot"></span> DEINE ZEIT. ÜBERALL.</div>
-      <h1 class="reveal delay-one">Eine Uhrzeit.<br /><span>Jede Zeitzone.</span></h1>
-      <p class="hero-copy reveal delay-two">Von EDT nach Berlin, von UTC+1 nach Tokio: Finde in Sekunden heraus, wie spät es anderswo ist.</p>
-      <div class="hero-actions reveal delay-three"><a class="primary-button" href="#rechner">Jetzt umrechnen <span aria-hidden="true">↗</span></a><span class="hero-note"><span aria-hidden="true">✦</span> Schnell. Präzise. Kostenlos.</span></div>
-      <div class="orbit orbit-one" aria-hidden="true"></div><div class="orbit orbit-two" aria-hidden="true"></div>
-    </section>
-
-    <section class="calculator-section wrap" id="rechner" aria-labelledby="calc-title">
-      <div class="section-heading"><div><span class="section-kicker">01 / TIME CONVERTER</span><h2 id="calc-title">Zeit, die für dich passt.</h2></div><span class="section-note"><span class="live-dot"></span> Live &amp; immer aktuell</span></div>
-      <div class="calculator-shell">
-        <div class="calculator-topline"><span><span class="mini-spark">✦</span> ZEITZONE UMRECHNEN</span><span class="topline-mark">V / 01</span></div>
-        <div class="calculator-body">
-          <div class="input-row">
-            <div class="field date-field"><label for="date">DATUM</label><div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/></svg><input type="date" id="date" required /></div></div>
-            <div class="field time-field"><label for="time">UHRZEIT</label><div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><input type="time" id="time" value="01:00" required /></div></div>
-          </div>
-          <div class="zones">
-            <div class="zone-block"><label for="fromZone">VON</label><div class="select-wrap"><span class="zone-symbol" aria-hidden="true">↗</span><select id="fromZone"></select><span class="select-arrow" aria-hidden="true">⌄</span></div><span class="zone-detail" id="fromDetail"></span></div>
-            <button type="button" class="swap-button" id="swap" aria-label="Zeitzonen tauschen" title="Zeitzonen tauschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h15m0 0-4-4m4 4-4 4M20 17H5m0 0 4-4m-4 4 4 4"/></svg></button>
-            <div class="zone-block"><label for="toZone">NACH</label><div class="select-wrap"><span class="zone-symbol" aria-hidden="true">↘</span><select id="toZone"></select><span class="select-arrow" aria-hidden="true">⌄</span></div><span class="zone-detail" id="toDetail"></span></div>
-          </div>
-          <div class="result" aria-live="polite"><div class="result-label"><span class="result-bullet"></span> DEIN ERGEBNIS</div><div class="result-content"><div><div class="result-time" id="resultTime">–</div><div class="result-date" id="resultDate">Wähle Datum und Uhrzeit</div></div><button type="button" id="copy" class="copy-button" aria-label="Ergebnis kopieren" title="Ergebnis kopieren"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><span>Kopieren</span></button></div><div class="result-foot" id="resultFoot">Sommerzeit wird automatisch berücksichtigt.</div></div>
-          <p class="error-message" id="error" role="alert" hidden></p>
+  <main class="tool-wrap">
+    <div class="brand" aria-label="VTime"><span class="brand-icon" aria-hidden="true"><span></span></span><span>V<span class="brand-accent">Time</span></span></div>
+    <div class="tool-heading"><span class="eyebrow"><span class="pulse-dot"></span> TIME ZONE CONVERTER</span><h1>Time, anywhere.</h1><p>Pick a date, time, and two time zones. Get the answer instantly.</p></div>
+    <section class="calculator-shell" aria-label="Time zone calculator">
+      <div class="calculator-topline"><span><span class="mini-spark">✦</span> CONVERT TIME</span><span>V / 01</span></div>
+      <div class="calculator-body">
+        <div class="input-row">
+          <div class="field date-field"><label for="date">DATE</label><div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/></svg><input type="date" id="date" required /></div></div>
+          <div class="field time-field"><label for="time">TIME</label><div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><input type="time" id="time" value="01:00" required /></div></div>
         </div>
+        <div class="zones">
+          <div class="zone-block"><label for="fromZone">FROM</label><div class="select-wrap"><span class="zone-symbol" aria-hidden="true">↗</span><select id="fromZone"></select><span class="select-arrow" aria-hidden="true">⌄</span></div><span class="zone-detail" id="fromDetail"></span></div>
+          <button type="button" class="swap-button" id="swap" aria-label="Swap time zones" title="Swap time zones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h15m0 0-4-4m4 4-4 4M20 17H5m0 0 4-4m-4 4 4 4"/></svg></button>
+          <div class="zone-block"><label for="toZone">TO</label><div class="select-wrap"><span class="zone-symbol" aria-hidden="true">↘</span><select id="toZone"></select><span class="select-arrow" aria-hidden="true">⌄</span></div><span class="zone-detail" id="toDetail"></span></div>
+        </div>
+        <div class="result" aria-live="polite"><div class="result-label"><span class="result-bullet"></span> RESULT</div><div class="result-content"><div><div class="result-time" id="resultTime">–</div><div class="result-date" id="resultDate">Choose a date and time</div></div><button type="button" id="copy" class="copy-button" aria-label="Copy result" title="Copy result"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><span>Copy</span></button></div><div class="result-foot" id="resultFoot">Daylight saving time is handled automatically.</div></div>
+        <p class="error-message" id="error" role="alert" hidden></p>
       </div>
-      <div class="hint"><span aria-hidden="true">ⓘ</span> EDT ist fest UTC−4. Berlin wechselt je nach Datum zwischen UTC+1 und UTC+2.</div>
     </section>
-
-    <section class="info-section wrap" id="so-funktionierts"><div class="info-intro"><span class="section-kicker">02 / GOOD TO KNOW</span><h2>Kein Rätselraten<br /><span>mit Zeitzonen.</span></h2></div><div class="info-cards"><article class="info-card"><div class="card-icon">◷</div><h3>Sommerzeit? Erledigt.</h3><p>Städte wie Berlin oder New York passen sich am gewählten Datum automatisch an.</p></article><article class="info-card"><div class="card-icon">±</div><h3>Feste Offsets.</h3><p>UTC+1 bleibt UTC+1 – unabhängig davon, welche Jahreszeit gerade ist.</p></article><article class="info-card"><div class="card-icon">↗</div><h3>Sofort verständlich.</h3><p>Datum, Uhrzeit und Zeitunterschied stehen direkt im Ergebnis.</p></article></div></section>
+    <p class="tool-note">City time zones follow daylight saving rules. Fixed UTC offsets never change.</p>
   </main>
-  <footer class="site-footer wrap"><a class="brand footer-brand" href="#top"><span class="brand-icon" aria-hidden="true"><span></span></span><span>V<span class="brand-accent">Time</span></span></a><span>Die Welt tickt anders. Du bist im Bild.</span><a href="#top">Nach oben ↑</a></footer>
 </body>
 </html>

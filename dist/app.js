@@ -1,14 +1,14 @@
 const zones = [
-  { group: 'Beliebte Zeitzonen', items: [
-    ['America/New_York', 'New York · ET'], ['Europe/Berlin', 'Berlin · MEZ/MESZ'], ['Europe/London', 'London · GMT/BST'],
-    ['America/Los_Angeles', 'Los Angeles · PT'], ['Asia/Tokyo', 'Tokio · JST'], ['Asia/Dubai', 'Dubai · GST'],
+  { group: 'Cities (daylight saving aware)', items: [
+    ['America/New_York', 'New York · ET'], ['Europe/Berlin', 'Berlin · CET/CEST'], ['Europe/London', 'London · GMT/BST'],
+    ['America/Los_Angeles', 'Los Angeles · PT'], ['Asia/Tokyo', 'Tokyo · JST'], ['Asia/Dubai', 'Dubai · GST'],
     ['Asia/Kolkata', 'Mumbai · IST'], ['Australia/Sydney', 'Sydney · AEST/AEDT']
   ]},
-  { group: 'Feste Abkürzungen', items: [
+  { group: 'Fixed abbreviations', items: [
     ['fixed:-240', 'EDT · UTC−4'], ['fixed:-300', 'EST · UTC−5'], ['fixed:-360', 'CST · UTC−6'],
     ['fixed:-420', 'MST · UTC−7'], ['fixed:-480', 'PST · UTC−8'], ['fixed:0', 'UTC · UTC+0']
   ]},
-  { group: 'Feste UTC-Offsets', items: Array.from({ length: 27 }, (_, i) => {
+  { group: 'Fixed UTC offsets', items: Array.from({ length: 27 }, (_, i) => {
     const h = i - 12;
     return [`fixed:${h * 60}`, `UTC${h < 0 ? '−' : '+'}${Math.abs(h)}`];
   }) }
@@ -40,7 +40,7 @@ for (const select of [fromSelect, toSelect]) {
 const now = new Date();
 dateInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 fromSelect.value = 'fixed:-240';
-toSelect.value = 'Europe/Berlin';
+toSelect.value = 'fixed:60';
 
 function partsAt(instant, zone) {
   const formatter = new Intl.DateTimeFormat('en-GB', {
@@ -65,7 +65,7 @@ function sourceToInstant(y, m, d, h, minute, zone) {
     const p = partsAt(new Date(ms), zone);
     return p[0] === y && p[1] === m && p[2] === d && p[3] === h && p[4] === minute;
   }).sort((a, b) => a - b);
-  if (!matches.length) throw new Error('Diese Uhrzeit existiert wegen der Zeitumstellung in der gewählten Zeitzone nicht. Bitte wähle eine andere Uhrzeit.');
+  if (!matches.length) throw new Error('This time does not exist in the selected zone because the clocks move forward. Choose another time.');
   return { ms: matches[0], ambiguous: matches.length > 1 };
 }
 
@@ -82,7 +82,7 @@ function targetParts(ms, zone) {
 
 function formatDate(p) {
   const local = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
-  return new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(local);
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(local);
 }
 
 function update() {
@@ -101,12 +101,12 @@ function update() {
     const sourceOffset = offsetAt(converted.ms, fromSelect.value);
     const targetOffset = offsetAt(converted.ms, toSelect.value);
     const difference = targetOffset - sourceOffset;
-    const diffText = difference === 0 ? 'Gleiche Uhrzeit' : `${Math.abs(difference / 60).toLocaleString('de-DE', { maximumFractionDigits: 2 })} Std. ${difference > 0 ? 'voraus' : 'zurück'}`;
+    const diffText = difference === 0 ? 'same time' : `${Math.abs(difference / 60).toLocaleString('en-US', { maximumFractionDigits: 2 })} hours ${difference > 0 ? 'ahead' : 'behind'}`;
     $('resultTime').textContent = resultTime;
     $('resultDate').textContent = resultDate;
-    $('fromDetail').textContent = `${offsetLabel(sourceOffset)} am gewählten Datum`;
-    $('toDetail').textContent = `${offsetLabel(targetOffset)} am gewählten Datum`;
-    $('resultFoot').textContent = `${fromSelect.selectedOptions[0].textContent} → ${toSelect.selectedOptions[0].textContent} · ${diffText}${converted.ambiguous ? ' · Bei doppelter Uhrzeit wurde die erste gewählt.' : ''}`;
+    $('fromDetail').textContent = `${offsetLabel(sourceOffset)} on this date`;
+    $('toDetail').textContent = `${offsetLabel(targetOffset)} on this date`;
+    $('resultFoot').textContent = `${fromSelect.selectedOptions[0].textContent} → ${toSelect.selectedOptions[0].textContent} · ${diffText}${converted.ambiguous ? ' · First occurrence of this repeated time used.' : ''}`;
     copyText = `${resultTime} · ${resultDate} (${toSelect.selectedOptions[0].textContent})`;
     const result = document.querySelector('.result');
     result.classList.remove('pop');
@@ -116,8 +116,8 @@ function update() {
   } catch (e) {
     lastInstant = null;
     $('resultTime').textContent = '–';
-    $('resultDate').textContent = 'Bitte Eingabe prüfen';
-    $('resultFoot').textContent = 'Sommerzeit wird automatisch berücksichtigt.';
+    $('resultDate').textContent = 'Check your input';
+    $('resultFoot').textContent = 'Daylight saving time is handled automatically.';
     error.textContent = e.message;
     error.hidden = false;
     copyText = '';
@@ -142,10 +142,10 @@ $('copy').addEventListener('click', async () => {
   try {
     await navigator.clipboard.writeText(copyText);
     const label = $('copy').querySelector('span');
-    label.textContent = 'Kopiert!';
-    setTimeout(() => label.textContent = 'Kopieren', 1800);
+    label.textContent = 'Copied!';
+    setTimeout(() => label.textContent = 'Copy', 1800);
   } catch {
-    error.textContent = 'Kopieren ist in diesem Browser nicht verfügbar.';
+    error.textContent = 'Copying is not available in this browser.';
     error.hidden = false;
   }
 });
