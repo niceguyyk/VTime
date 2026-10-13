@@ -9,14 +9,15 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(root, 'dist');
 const admin = path.join(root, 'admin');
 const port = Number(process.env.PORT || 3000);
+const host = process.env.HOST || '127.0.0.1';
 const password = process.env.ADMIN_PASSWORD;
 const databaseUrl = process.env.DATABASE_URL;
-if (!password || !databaseUrl) {
-  console.error('ADMIN_PASSWORD and DATABASE_URL must be set before starting VTime.');
+if (!password) {
+  console.error('ADMIN_PASSWORD must be set before starting VTime.');
   process.exit(1);
 }
 
-const pool = new pg.Pool({ connectionString: databaseUrl, max: 5, idleTimeoutMillis: 30000 });
+const pool = databaseUrl ? new pg.Pool({ connectionString: databaseUrl, max: 5, idleTimeoutMillis: 30000 }) : null;
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '10kb' }));
@@ -98,7 +99,13 @@ function sendDatabaseError(error, res) {
   return res.status(503).json({ error: 'Database unavailable. Check the server connection.' });
 }
 
+function requireDatabase(_req, res, next) {
+  if (!pool) return res.status(503).json({ error: 'Database not configured yet. Set DATABASE_URL on the server.' });
+  next();
+}
+
 app.get('/healthz', async (_req, res) => {
+  if (!pool) return res.status(503).json({ ok: false, database: 'not configured' });
   try {
     await pool.query('select 1');
     res.json({ ok: true });
@@ -141,7 +148,7 @@ app.post('/api/logout', requireLogin, requireCsrf, (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/api/staff', requireLogin, async (_req, res) => {
+app.get('/api/staff', requireLogin, requireDatabase, async (_req, res) => {
   res.set('Cache-Control', 'no-store');
   try {
     const result = await pool.query('select id, name, discord_id, time_zone, available_from, available_until from vtime.staff_members order by lower(name), id');
@@ -149,7 +156,7 @@ app.get('/api/staff', requireLogin, async (_req, res) => {
   } catch (error) { sendDatabaseError(error, res); }
 });
 
-app.post('/api/staff', requireLogin, requireCsrf, async (req, res) => {
+app.post('/api/staff', requireLogin, requireCsrf, requireDatabase, async (req, res) => {
   let data;
   try { data = validateStaff(req.body); }
   catch (error) { return res.status(400).json({ error: error.message }); }
@@ -162,7 +169,7 @@ app.post('/api/staff', requireLogin, requireCsrf, async (req, res) => {
   } catch (error) { sendDatabaseError(error, res); }
 });
 
-app.put('/api/staff/:id', requireLogin, requireCsrf, async (req, res) => {
+app.put('/api/staff/:id', requireLogin, requireCsrf, requireDatabase, async (req, res) => {
   let data;
   try { data = validateStaff(req.body); }
   catch (error) { return res.status(400).json({ error: error.message }); }
@@ -177,7 +184,7 @@ app.put('/api/staff/:id', requireLogin, requireCsrf, async (req, res) => {
   } catch (error) { sendDatabaseError(error, res); }
 });
 
-app.delete('/api/staff/:id', requireLogin, requireCsrf, async (req, res) => {
+app.delete('/api/staff/:id', requireLogin, requireCsrf, requireDatabase, async (req, res) => {
   if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ error: 'Invalid staff ID.' });
   try {
     const result = await pool.query('delete from vtime.staff_members where id=$1', [req.params.id]);
@@ -186,7 +193,7 @@ app.delete('/api/staff/:id', requireLogin, requireCsrf, async (req, res) => {
   } catch (error) { sendDatabaseError(error, res); }
 });
 
-app.get('/api/availability', requireLogin, async (req, res) => {
+app.get('/api/availability', requireLogin, requireDatabase, async (req, res) => {
   const date = req.query.date;
   const zone = req.query.timeZone;
   if (!isValidDate(date) || !isValidTimeZone(zone)) return res.status(400).json({ error: 'Choose a valid date and time zone.' });
@@ -205,9 +212,9 @@ app.use((error, _req, res, _next) => {
   res.status(error.status || 500).json({ error: error.status === 400 ? 'Invalid request body.' : 'Server error.' });
 });
 
-const server = app.listen(port, '0.0.0.0', () => console.log(`VTime listening on port ${port}`));
+const server = app.listen(port, host, () => console.log(`VTime listening on ${host}:${port}`));
 function shutdown() {
-  server.close(() => pool.end().then(() => process.exit(0)));
+  server.close(() => pool ? pool.end().then(() => process.exit(0)) : process.exit(0));
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

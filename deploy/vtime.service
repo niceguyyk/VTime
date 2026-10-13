@@ -1,0 +1,22 @@
+[Unit]
+Description=VTime Node server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vtime
+Group=vtime
+WorkingDirectory=/opt/vtime
+EnvironmentFile=/etc/vtime/vtime.env
+ExecStartPre=/usr/bin/node /opt/vtime/scripts/setup-db.js --optional
+ExecStart=/usr/bin/node /opt/vtime/server.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

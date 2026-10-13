@@ -4,6 +4,10 @@ import path from 'node:path';
 import pg from 'pg';
 
 if (!process.env.DATABASE_URL) {
+  if (process.argv.includes('--optional')) {
+    console.log('DATABASE_URL not set; skipping Supabase schema setup.');
+    process.exit(0);
+  }
   console.error('DATABASE_URL is required. Copy the Supabase connection string from Project → Connect.');
   process.exit(1);
 }

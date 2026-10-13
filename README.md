@@ -22,6 +22,26 @@ For a shell or hosting platform that supplies environment variables directly, us
 
 ## Deploy on a Node server
 
-Deploy this repository to a Node.js 22+ host, run `npm ci --omit=dev`, and set `DATABASE_URL`, `ADMIN_PASSWORD`, `NODE_ENV=production`, and `PORT` as **server-side environment variables**. Run `npm run db:setup` once, then run `npm start` under the host's process manager. Put the app behind HTTPS and forward all paths, including `/admin` and `/api/*`, to the Node port. Do not put the password or database URL in public files or client-side build settings.
+The intended host name is **`vtime.vyrontechnologies.com`** and the Supabase project is **`https://dfselfzlatvlqqycdcsk.supabase.co`**. The project URL identifies the project, but it is not a Postgres connection string. Copy the Postgres URI from that project's **Connect** panel and use it as `DATABASE_URL`. Keep `ADMIN_PASSWORD` and `DATABASE_URL` only in server environment variables.
+
+### VyronHosting node `vtime`
+
+The `vtime` VyronHosting node is an Ubuntu VPS with a managed hostname, `vtime.vyronhosting.com`. It runs this repository from `/opt/vtime` with the [systemd unit](deploy/vtime.service) and [Nginx proxy](deploy/vtime.nginx.conf). The service binds Node to `127.0.0.1:3000`; Nginx serves HTTP on port 80 inside the guest while Vyron handles the public HTTPS route. Set `ADMIN_PASSWORD` in `/etc/vtime/vtime.env` and add `DATABASE_URL` there when ready. Restart `vtime.service` after editing the environment file. Its startup step applies the Supabase schema whenever `DATABASE_URL` is configured.
+
+The public converter can start before `DATABASE_URL` is set. The staff panel then shows a database configuration error until the connection is added. For the custom domain, connect `vtime.vyrontechnologies.com` to this node in VyronHosting and add the DNS verification and routing records shown by the domain panel. DNS must resolve before the custom URL can work.
+
+### Other Linux VPS
+
+This repository includes a [systemd unit](deploy/vtime.service) and [Caddy configuration](deploy/Caddyfile) for a Linux VPS. With Node.js 22+, Git, and Caddy installed:
+
+1. Point the domain's `A` record (and `AAAA` if using IPv6) to the server. Confirm it resolves before starting Caddy.
+2. Clone the repository to `/opt/vtime` and run `npm ci --omit=dev` there.
+3. Create a system user `vtime` with read access to `/opt/vtime`.
+4. Create `/etc/vtime/vtime.env` readable only by root. Set `NODE_ENV=production`, `HOST=127.0.0.1`, `PORT=3000`, `ADMIN_PASSWORD`, and `DATABASE_URL`. Use the requested panel password as `ADMIN_PASSWORD`; keep the actual value out of the repository. URL-encode special characters in the database password if needed.
+5. Copy `deploy/vtime.service` to `/etc/systemd/system/vtime.service`, then run `sudo systemctl daemon-reload && sudo systemctl enable --now vtime`. The service creates or updates the private `vtime` schema before starting Node.
+6. Add `deploy/Caddyfile` to your Caddy configuration and reload Caddy. It terminates HTTPS and proxies the full site, including `/admin` and `/api/*`, to Node on localhost.
+7. Check `https://vtime.vyrontechnologies.com/healthz` for `{"ok":true}`, then sign in at `/admin` and add staff.
+
+If the server already uses another HTTPS reverse proxy, configure it to forward all paths to `127.0.0.1:3000` instead of installing Caddy. Do not expose port 3000 publicly. On a container host, set `HOST=0.0.0.0` and use the host's HTTPS routing.
 
 This app needs a persistent Node process and PostgreSQL. A static host such as GitHub Pages cannot run its admin API. The Supabase connection string is available in the Supabase dashboard under **Connect**; a session pooler URL is suitable when a host has IPv4-only networking.
