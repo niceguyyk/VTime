@@ -2,7 +2,7 @@ const STEP_MS = 15 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const formatters = new Map();
 
-const fixedNames = { UTC: 0, GMT: 0, EDT: -240, EST: -300, PDT: -420, PST: -480, CET: 60, CEST: 120 };
+const fixedNames = { UTC: 0, GMT: 0, EDT: -240, EST: -300, MDT: -360, MST: -420, PDT: -420, PST: -480, CET: 60, CEST: 120 };
 
 export function fixedOffset(zone) {
   if (typeof zone !== 'string') return null;

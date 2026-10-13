@@ -43,7 +43,7 @@ async function api(url, options = {}) {
 }
 
 function fillTimeZones() {
-  const common = ['UTC', 'EDT', 'EST', 'PDT', 'PST', 'CET', 'CEST',
+  const common = ['UTC', 'EDT', 'EST', 'MDT', 'MST', 'PDT', 'PST', 'CET', 'CEST',
     ...Array.from({ length: 27 }, (_, i) => `UTC${i - 12 < 0 ? '' : '+'}${i - 12}`),
     'UTC+5:30', 'UTC+9:30', 'Europe/Berlin', 'Europe/London', 'America/New_York',
     'America/Los_Angeles', 'Asia/Tokyo', 'Asia/Dubai', 'Asia/Kolkata', 'Australia/Sydney'];
@@ -58,7 +58,7 @@ function fillTimeZones() {
 }
 
 function fixedOffset(zone) {
-  const names = { UTC: 0, GMT: 0, EDT: -240, EST: -300, PDT: -420, PST: -480, CET: 60, CEST: 120 };
+  const names = { UTC: 0, GMT: 0, EDT: -240, EST: -300, MDT: -360, MST: -420, PDT: -420, PST: -480, CET: 60, CEST: 120 };
   if (Object.hasOwn(names, zone.toUpperCase())) return names[zone.toUpperCase()];
   const match = /^UTC([+-])(\d{1,2})(?::([0-5]\d))?$/i.exec(zone);
   if (!match) return null;

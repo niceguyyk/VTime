@@ -4,7 +4,7 @@ A minimal, dark time zone converter with a private staff meeting planner. The pu
 
 ## Staff planner
 
-The password-protected panel at `/admin` stores each staff member's name, Discord ID, time zone, and usual hours in a **SQLite database on the VTime server**. Hours default to **13:00–21:00 in each person's local time** and can be edited. Time zones accept cities, fixed abbreviations such as `EDT` and `CET`, or offsets such as `UTC+1` and `UTC+5:30`. Abbreviations and UTC offsets stay fixed; city zones adjust for daylight saving time. The panel shows current local times and finds meeting windows when all staff members' usual hours overlap on a selected date, displayed in your chosen time zone. These are estimates from saved hours, not live calendar or Discord presence.
+The password-protected panel at `/admin` stores each staff member's name, Discord ID, time zone, and usual hours in a **SQLite database on the VTime server**. Hours default to **13:00–21:00 in each person's local time** and can be edited. Time zones accept cities, fixed abbreviations such as `EDT`, `MDT`, and `CET`, or offsets such as `UTC+1` and `UTC+5:30`. Abbreviations and UTC offsets stay fixed; city zones adjust for daylight saving time. The panel shows current local times and finds meeting windows when all staff members' usual hours overlap on a selected date, displayed in your chosen time zone. These are estimates from saved hours, not live calendar or Discord presence.
 
 The browser never receives the database file or admin password. The Node server owns sessions, validates input, and writes to the local database.
 
