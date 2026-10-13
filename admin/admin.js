@@ -77,6 +77,11 @@ function fillTimeZones() {
 
 function toggleCustom(selectId, customId) {
   const custom = $(customId);
+  if (selectId === 'staffRole') {
+    custom.hidden = false;
+    custom.required = $(selectId).value === '__custom__';
+    return;
+  }
   custom.hidden = $(selectId).value !== '__custom__';
   custom.required = !custom.hidden && selectId !== 'viewerZone';
 }
@@ -87,7 +92,10 @@ function choiceValue(selectId, customId) {
 
 function setChoice(selectId, customId, value) {
   const select = $(selectId);
-  if ([...select.options].some(option => option.value === value)) select.value = value;
+  if ([...select.options].some(option => option.value === value)) {
+    select.value = value;
+    $(customId).value = '';
+  }
   else {
     select.value = '__custom__';
     $(customId).value = value;
@@ -284,7 +292,16 @@ $('staffForm').addEventListener('submit', async event => {
 
 $('cancelEdit').addEventListener('click', resetForm);
 $('meetingDate').addEventListener('change', loadAvailability);
-$('staffRole').addEventListener('change', () => toggleCustom('staffRole', 'staffRoleCustom'));
+$('staffRole').addEventListener('change', () => {
+  if ($('staffRole').value !== '__custom__') $('staffRoleCustom').value = '';
+  toggleCustom('staffRole', 'staffRoleCustom');
+  if ($('staffRole').value === '__custom__') $('staffRoleCustom').focus();
+});
+$('staffRoleCustom').addEventListener('input', () => {
+  if ($('staffRoleCustom').value.trim()) $('staffRole').value = '__custom__';
+  else if ($('staffRole').value === '__custom__') $('staffRole').value = '';
+  toggleCustom('staffRole', 'staffRoleCustom');
+});
 $('staffZone').addEventListener('change', () => toggleCustom('staffZone', 'staffZoneCustom'));
 $('viewerZone').addEventListener('change', () => { toggleCustom('viewerZone', 'viewerZoneCustom'); loadAvailability(); });
 $('viewerZoneCustom').addEventListener('change', loadAvailability);
