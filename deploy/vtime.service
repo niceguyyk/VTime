@@ -9,7 +9,8 @@ User=vtime
 Group=vtime
 WorkingDirectory=/opt/vtime
 EnvironmentFile=/etc/vtime/vtime.env
-ExecStartPre=/usr/bin/node /opt/vtime/scripts/setup-db.js --optional
+Environment=DB_PATH=/var/lib/vtime/vtime.sqlite
+StateDirectory=vtime
 ExecStart=/usr/bin/node /opt/vtime/server.js
 Restart=on-failure
 RestartSec=5

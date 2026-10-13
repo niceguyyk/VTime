@@ -1,47 +1,30 @@
 # VTime
 
-A minimal, dark time zone converter with a private staff meeting planner. The public converter handles city time zones, daylight saving time, fixed UTC offsets, and quick sharing. The staff panel opens from the database icon in the bottom right.
+A minimal, dark time zone converter with a private staff meeting planner. The public converter supports city time zones, daylight saving time, fixed UTC offsets, and quick sharing. The database icon in the bottom right opens the staff panel.
 
 ## Staff planner
 
-The password protected panel at `/admin` stores a staff member's name, Discord ID, time zone, and usual availability in Supabase Postgres. Hours default to **13:00–21:00 in each person's local time** and can be edited per person. It shows everyone's current local time and finds the times when all staff members' usual hours overlap on a selected date, displayed in your chosen time zone. It suggests a one-hour meeting when a full overlap lasts at least one hour and shows the best partial overlap otherwise. These are estimates from saved hours, not live calendar or Discord presence.
+The password-protected panel at `/admin` stores each staff member's name, Discord ID, time zone, and usual hours in a **SQLite database on the VTime server**. Hours default to **13:00–21:00 in each person's local time** and can be edited. The panel shows current local times and finds meeting windows when all staff members' usual hours overlap on a selected date, displayed in your chosen time zone. These are estimates from saved hours, not live calendar or Discord presence.
 
-The browser never receives the database connection string or admin password. The Node server owns sessions, validates input, and queries the private `vtime` database schema.
+The browser never receives the database file or admin password. The Node server owns sessions, validates input, and writes to the local database.
 
 ## Run locally
 
-Requires Node.js 22 or newer and a Supabase Postgres connection string.
+Requires Node.js 22 or newer.
 
-1. Copy `.env.example` to `.env` and set `DATABASE_URL` to the connection string from your Supabase project and `ADMIN_PASSWORD` to your private password. Keep `.env` out of Git.
-2. Install dependencies with `npm ci`.
-3. Run the schema with `node --env-file=.env scripts/setup-db.js`.
-4. Start the server with `node --env-file=.env server.js`.
-5. Open `http://localhost:3000` and use the bottom-right database icon to open the staff panel.
+1. Copy `.env.example` to `.env` and set `ADMIN_PASSWORD`. Keep `.env` out of Git.
+2. Run `npm ci`.
+3. Run `node --env-file=.env server.js`.
+4. Open `http://localhost:3000`. Use the database icon to open the staff panel.
 
-For a shell or hosting platform that supplies environment variables directly, use `npm run db:setup` once and `npm start` to launch. `GET /healthz` checks the database connection. Run `npm test` for the meeting calculation tests.
+The database is created automatically at `DB_PATH` (default: `./data/vtime.sqlite`). Back up this file to preserve staff data. `GET /healthz` checks the local database. Run `npm test` for the planner and storage tests.
 
-## Deploy on a Node server
+## VyronHosting deployment
 
-The live host name is **[vtime.vyronhosting.com](https://vtime.vyronhosting.com)** and the Supabase project is **`https://dfselfzlatvlqqycdcsk.supabase.co`**. The project URL identifies the project, but it is not a Postgres connection string. Copy the Postgres URI from that project's **Connect** panel and use it as `DATABASE_URL`. Keep `ADMIN_PASSWORD` and `DATABASE_URL` only in server environment variables.
+The live site is **[vtime.vyronhosting.com](https://vtime.vyronhosting.com)**. The existing Ubuntu node `vtime` runs this repository from `/opt/vtime` with the [systemd unit](deploy/vtime.service) and [Nginx proxy](deploy/vtime.nginx.conf). Node binds to `127.0.0.1:3000`; Nginx listens on port 80 inside the guest. A dedicated Cloudflare Tunnel connects the hostname to Nginx using the [tunnel service](deploy/vtime-cloudflared.service).
 
-### VyronHosting node `vtime`
+The database lives at `/var/lib/vtime/vtime.sqlite`. Systemd creates that writable directory for the `vtime` service. Keep `/etc/vtime/vtime.env` readable only by root and set `ADMIN_PASSWORD` there. The SQLite database and tunnel token stay on the server and are never committed to Git.
 
-The existing `vtime` VyronHosting Ubuntu node runs this repository from `/opt/vtime` with the [systemd unit](deploy/vtime.service) and [Nginx proxy](deploy/vtime.nginx.conf). The service binds Node to `127.0.0.1:3000`; Nginx serves HTTP on port 80 inside the guest. A dedicated Cloudflare Tunnel runs from the guest using the [tunnel service](deploy/vtime-cloudflared.service) and connects `vtime.vyronhosting.com` to Nginx. The Ubuntu node and its data were kept in place. Set `ADMIN_PASSWORD` in `/etc/vtime/vtime.env` and add `DATABASE_URL` there when ready. Restart `vtime.service` after editing the environment file. Its startup step applies the Supabase schema whenever `DATABASE_URL` is configured.
+To update the deployed app, pull `main` in `/opt/vtime`, run `npm ci --omit=dev`, install the latest `deploy/vtime.service` to `/etc/systemd/system/vtime.service`, then run `sudo systemctl daemon-reload && sudo systemctl restart vtime`. Check `https://vtime.vyronhosting.com/healthz` for `{"ok":true,"database":"local"}`.
 
-The public converter works before `DATABASE_URL` is set. The staff panel then shows a database configuration error until the connection is added. To finish database setup on the node, edit `/etc/vtime/vtime.env` as root, add `DATABASE_URL=<Supabase Postgres URI>`, then run `sudo systemctl restart vtime` and check `https://vtime.vyronhosting.com/healthz` for `{"ok":true}`. Never commit the URI or tunnel token to Git.
-
-### Other Linux VPS
-
-This repository includes a [systemd unit](deploy/vtime.service) and [Caddy configuration](deploy/Caddyfile) for a Linux VPS. With Node.js 22+, Git, and Caddy installed:
-
-1. Point your own domain's `A` record (and `AAAA` if using IPv6) to the server. Confirm it resolves before starting Caddy. Change the hostname in `deploy/Caddyfile` to your domain.
-2. Clone the repository to `/opt/vtime` and run `npm ci --omit=dev` there.
-3. Create a system user `vtime` with read access to `/opt/vtime`.
-4. Create `/etc/vtime/vtime.env` readable only by root. Set `NODE_ENV=production`, `HOST=127.0.0.1`, `PORT=3000`, `ADMIN_PASSWORD`, and `DATABASE_URL`. Use the requested panel password as `ADMIN_PASSWORD`; keep the actual value out of the repository. URL-encode special characters in the database password if needed.
-5. Copy `deploy/vtime.service` to `/etc/systemd/system/vtime.service`, then run `sudo systemctl daemon-reload && sudo systemctl enable --now vtime`. The service creates or updates the private `vtime` schema before starting Node.
-6. Add `deploy/Caddyfile` to your Caddy configuration and reload Caddy. It terminates HTTPS and proxies the full site, including `/admin` and `/api/*`, to Node on localhost.
-7. Check `https://your-domain.example/healthz` for `{"ok":true}`, then sign in at `/admin` and add staff.
-
-If the server already uses another HTTPS reverse proxy, configure it to forward all paths to `127.0.0.1:3000` instead of installing Caddy. Do not expose port 3000 publicly. On a container host, set `HOST=0.0.0.0` and use the host's HTTPS routing.
-
-This app needs a persistent Node process and PostgreSQL. A static host such as GitHub Pages cannot run its admin API. The Supabase connection string is available in the Supabase dashboard under **Connect**; a session pooler URL is suitable when a host has IPv4-only networking.
+For another Linux VPS, the repository also includes a [Caddy configuration](deploy/Caddyfile). Change its placeholder hostname to your domain, configure the systemd service and environment file, and point DNS to the server.
