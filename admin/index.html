@@ -28,7 +28,7 @@
 
       <section class="panel meeting-panel" aria-labelledby="meetingTitle">
         <div class="panel-title"><div><span class="section-label">01 / FIND A TIME</span><h2 id="meetingTitle">Meeting overlap</h2></div></div>
-        <div class="meeting-controls"><div class="field"><label for="meetingDate">DATE</label><input type="date" id="meetingDate" /></div><div class="field"><label for="viewerZone">YOUR TIME ZONE</label><select id="viewerZone"></select><input id="viewerZoneCustom" aria-label="Custom time zone" placeholder="e.g. UTC+5:45" autocomplete="off" spellcheck="false" hidden /></div></div>
+        <div class="meeting-controls"><div class="field"><label for="meetingDate">DATE</label><input type="date" id="meetingDate" /></div><div class="field"><label for="viewerZone">YOUR TIME ZONE</label><select id="viewerZone"></select><input id="viewerZoneCustom" aria-label="Custom time zone" placeholder="e.g. UTC+5:45" autocomplete="off" spellcheck="false" hidden /></div><div class="field"><label for="roleFilter">SHOW STAFF</label><select id="roleFilter"><option value="all">All staff</option><option value="senior">All Senior ranks</option><option value="leadership">Heads, Directors &amp; Overseers</option></select></div></div>
         <div id="meetingResult" class="meeting-result" aria-live="polite"><span class="result-kicker">YOUR TEAM'S WINDOW</span><strong>Add staff to see an overlap.</strong></div>
         <p class="small-note">Based on saved hours, not live calendar events. A meeting can be planned anywhere in the common window.</p>
       </section>
@@ -39,7 +39,7 @@
           <div class="panel-title"><div><span class="section-label">03 / MANAGE</span><h2 id="formTitle">Add a person</h2></div></div>
           <form id="staffForm" class="staff-form">
             <div class="field"><label for="staffName">NAME</label><input id="staffName" maxlength="80" required placeholder="e.g. Alex" /></div>
-            <div class="field"><label for="staffRole">ROLE</label><select id="staffRole" required><option value="" selected disabled>Select a role</option><option>Management</option><option>Moderator</option><option>Administrator</option><option>Support</option><option>Staff</option><option value="__custom__">Custom role…</option></select><label class="custom-role-label" for="staffRoleCustom">OR TYPE A CUSTOM ROLE</label><input id="staffRoleCustom" maxlength="60" placeholder="e.g. Event Lead" /></div>
+            <div class="field"><label for="staffRole">ROLE</label><select id="staffRole" required><option value="" selected disabled>Select a role</option></select><p id="legacyRoleNote" class="small-note" hidden></p></div>
             <div class="field"><label for="discordId">DISCORD ID</label><input id="discordId" inputmode="numeric" pattern="[0-9]{17,20}" required placeholder="17–20 digits" /></div>
             <div class="field"><label for="staffZone">TIME ZONE</label><select id="staffZone" required></select><input id="staffZoneCustom" aria-label="Custom time zone" placeholder="e.g. UTC+5:45" autocomplete="off" spellcheck="false" hidden /><p class="small-note">Short zones stay fixed. City zones adjust for daylight saving.</p></div>
             <div class="hours-row"><div class="field"><label for="availableFrom">USUALLY FROM</label><input type="time" id="availableFrom" value="13:00" required /></div><div class="field"><label for="availableUntil">UNTIL</label><input type="time" id="availableUntil" value="21:00" required /></div></div>

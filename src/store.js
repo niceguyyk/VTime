@@ -25,7 +25,7 @@ export function openStore(filename) {
   }
 
   const list = db.prepare('SELECT id, name, role, discord_id, time_zone, available_from, available_until FROM staff_members ORDER BY lower(name), id');
-  const availability = db.prepare('SELECT time_zone, available_from, available_until FROM staff_members');
+  const availability = db.prepare('SELECT role, time_zone, available_from, available_until FROM staff_members');
   const insert = db.prepare('INSERT INTO staff_members (name, role, discord_id, time_zone, available_from, available_until) VALUES (?, ?, ?, ?, ?, ?)');
   const update = db.prepare('UPDATE staff_members SET name = ?, role = ?, discord_id = ?, time_zone = ?, available_from = ?, available_until = ? WHERE id = ?');
   const remove = db.prepare('DELETE FROM staff_members WHERE id = ?');

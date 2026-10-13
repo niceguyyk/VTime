@@ -4,6 +4,7 @@ import path from 'node:path';
 import express from 'express';
 import { calculateAvailability, isValidDate, isValidTimeZone } from './src/planner.js';
 import { openStore } from './src/store.js';
+import { STAFF_ROLES, isStaffRole, isRoleGroup, matchesRoleGroup } from './src/roles.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(root, 'dist');
@@ -79,14 +80,14 @@ function requireCsrf(req, res, next) {
 
 function validateStaff(body) {
   const name = typeof body?.name === 'string' ? body.name.trim() : '';
-  const role = typeof body?.role === 'string' ? body.role.trim() : 'Staff';
+  const role = typeof body?.role === 'string' ? body.role.trim() : '';
   const discordId = typeof body?.discordId === 'string' ? body.discordId.trim() : '';
   const timeZone = typeof body?.timeZone === 'string' ? body.timeZone.trim() : '';
   const availableFrom = typeof body?.availableFrom === 'string' ? body.availableFrom : '13:00';
   const availableUntil = typeof body?.availableUntil === 'string' ? body.availableUntil : '21:00';
   const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
   if (!name || name.length > 80) throw new Error('Name must be 1–80 characters.');
-  if (!role || role.length > 60) throw new Error('Role must be 1–60 characters.');
+  if (!isStaffRole(role)) throw new Error('Choose a role from the list.');
   if (!/^\d{17,20}$/.test(discordId)) throw new Error('Discord ID must be 17–20 digits.');
   if (!isValidTimeZone(timeZone)) throw new Error('Choose a valid city, abbreviation, or UTC offset.');
   if (!timePattern.test(availableFrom) || !timePattern.test(availableUntil) || availableFrom >= availableUntil) {
@@ -143,10 +144,18 @@ app.post('/api/logout', requireLogin, requireCsrf, (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/api/staff', requireLogin, (_req, res) => {
+app.get('/api/roles', requireLogin, (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ roles: STAFF_ROLES });
+});
+
+app.get('/api/staff', requireLogin, (req, res) => {
+  const group = req.query.group || 'all';
+  if (!isRoleGroup(group)) return res.status(400).json({ error: 'Choose a valid staff filter.' });
   res.set('Cache-Control', 'no-store');
   try {
-    res.json({ staff: store.list() });
+    const allStaff = store.list();
+    res.json({ staff: allStaff.filter(person => matchesRoleGroup(person.role, group)), total: allStaff.length });
   } catch (error) { sendDatabaseError(error, res); }
 });
 
@@ -181,10 +190,12 @@ app.delete('/api/staff/:id', requireLogin, requireCsrf, (req, res) => {
 app.get('/api/availability', requireLogin, (req, res) => {
   const date = req.query.date;
   const zone = req.query.timeZone;
+  const group = req.query.group || 'all';
+  if (!isRoleGroup(group)) return res.status(400).json({ error: 'Choose a valid staff filter.' });
   if (!isValidDate(date) || !isValidTimeZone(zone)) return res.status(400).json({ error: 'Choose a valid date and time zone.' });
   try {
     res.set('Cache-Control', 'no-store');
-    res.json(calculateAvailability(store.availability(), date, zone));
+    res.json(calculateAvailability(store.availability().filter(person => matchesRoleGroup(person.role, group)), date, zone));
   } catch (error) { sendDatabaseError(error, res); }
 });
 

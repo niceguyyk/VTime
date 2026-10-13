@@ -10,7 +10,7 @@ test('staff data survives a database reopen and supports edits', () => {
   const dir = mkdtempSync(path.join(tmpdir(), 'vtime-store-'));
   const filename = path.join(dir, 'staff.sqlite');
   const person = {
-    name: 'Alex', role: 'Management', discordId: '123456789012345678', timeZone: 'Europe/Berlin',
+    name: 'Alex', role: 'Managment', discordId: '123456789012345678', timeZone: 'Europe/Berlin',
     availableFrom: '13:00', availableUntil: '21:00'
   };
   try {
@@ -18,7 +18,7 @@ test('staff data survives a database reopen and supports edits', () => {
     const id = store.add(person);
     assert.equal(store.healthy(), true);
     assert.equal(store.list()[0].discord_id, person.discordId);
-    assert.equal(store.list()[0].role, 'Management');
+    assert.equal(store.list()[0].role, 'Managment');
     assert.throws(() => store.add(person), { code: 'SQLITE_CONSTRAINT_UNIQUE' });
     store.close();
 

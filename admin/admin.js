@@ -1,6 +1,7 @@
 const $ = id => document.getElementById(id);
 let csrf = '';
 let staff = [];
+let totalStaff = 0;
 let editingId = null;
 
 function localDate() {
@@ -42,6 +43,13 @@ async function api(url, options = {}) {
   return data;
 }
 
+async function fillRoles() {
+  const { roles } = await api('/api/roles');
+  const select = $('staffRole');
+  select.length = 1;
+  for (const role of roles) select.add(new Option(role, role));
+}
+
 function fillTimeZones() {
   const short = [
     ['UTC', 'UTC'], ['EDT', 'EDT · UTC−4'], ['EST', 'EST · UTC−5'],
@@ -77,11 +85,6 @@ function fillTimeZones() {
 
 function toggleCustom(selectId, customId) {
   const custom = $(customId);
-  if (selectId === 'staffRole') {
-    custom.hidden = false;
-    custom.required = $(selectId).value === '__custom__';
-    return;
-  }
   custom.hidden = $(selectId).value !== '__custom__';
   custom.required = !custom.hidden && selectId !== 'viewerZone';
 }
@@ -101,6 +104,19 @@ function setChoice(selectId, customId, value) {
     $(customId).value = value;
   }
   toggleCustom(selectId, customId);
+}
+
+function selectRole(role) {
+  const select = $('staffRole');
+  const note = $('legacyRoleNote');
+  if ([...select.options].some(option => option.value === role)) {
+    select.value = role;
+    note.hidden = true;
+  } else {
+    select.value = '';
+    note.textContent = `Previous role: ${role}. Choose a role from the list.`;
+    note.hidden = false;
+  }
 }
 
 function fixedOffset(zone) {
@@ -133,9 +149,11 @@ function addText(parent, tag, className, value) {
 function renderStaff() {
   const list = $('staffList');
   list.replaceChildren();
-  $('teamCount').textContent = `${staff.length} ${staff.length === 1 ? 'person' : 'staff'}`;
+  $('teamCount').textContent = staff.length === totalStaff
+    ? `${staff.length} ${staff.length === 1 ? 'person' : 'staff'}`
+    : `${staff.length} of ${totalStaff} staff`;
   if (!staff.length) {
-    addText(list, 'p', 'empty', 'No staff members yet. Add one on the right.');
+    addText(list, 'p', 'empty', totalStaff ? 'No staff in this group.' : 'No staff members yet. Add one on the right.');
     return;
   }
   for (const person of staff) {
@@ -169,7 +187,7 @@ function renderStaff() {
 function resetForm() {
   editingId = null;
   $('staffForm').reset();
-  toggleCustom('staffRole', 'staffRoleCustom');
+  $('legacyRoleNote').hidden = true;
   toggleCustom('staffZone', 'staffZoneCustom');
   $('availableFrom').value = '13:00';
   $('availableUntil').value = '21:00';
@@ -182,7 +200,7 @@ function resetForm() {
 function editStaff(person) {
   editingId = person.id;
   $('staffName').value = person.name;
-  setChoice('staffRole', 'staffRoleCustom', person.role || 'Staff');
+  selectRole(person.role || 'Staff');
   $('discordId').value = person.discord_id;
   setChoice('staffZone', 'staffZoneCustom', person.time_zone);
   $('availableFrom').value = person.available_from.slice(0, 5);
@@ -208,7 +226,7 @@ function renderMeeting(data) {
   box.replaceChildren();
   addText(box, 'span', 'result-kicker', "YOUR TEAM'S WINDOW");
   if (!data.total) {
-    addText(box, 'strong', '', 'Add staff to see an overlap.');
+    addText(box, 'strong', '', totalStaff ? 'No staff in this group.' : 'Add staff to see an overlap.');
     return;
   }
   if (data.windows.length) {
@@ -237,15 +255,16 @@ async function loadAvailability() {
   const zone = choiceValue('viewerZone', 'viewerZoneCustom');
   if (!date || !zone) return;
   try {
-    const query = new URLSearchParams({ date, timeZone: zone });
+    const query = new URLSearchParams({ date, timeZone: zone, group: $('roleFilter').value });
     renderMeeting(await api(`/api/availability?${query}`));
     showError('panelError');
   } catch (error) { showError('panelError', error.message); }
 }
 
 async function loadPanel() {
-  const data = await api('/api/staff');
+  const data = await api(`/api/staff?group=${encodeURIComponent($('roleFilter').value)}`);
   staff = data.staff;
+  totalStaff = data.total;
   renderStaff();
   await loadAvailability();
 }
@@ -258,6 +277,7 @@ $('loginForm').addEventListener('submit', async event => {
     $('password').value = '';
     csrf = data.csrf;
     showPanel();
+    await fillRoles();
     await loadPanel();
   } catch (error) {
     showError(csrf ? 'panelError' : 'loginError', error.message);
@@ -275,7 +295,7 @@ $('staffForm').addEventListener('submit', async event => {
   showError('formError');
   const payload = {
     name: $('staffName').value,
-    role: choiceValue('staffRole', 'staffRoleCustom'),
+    role: $('staffRole').value,
     discordId: $('discordId').value,
     timeZone: choiceValue('staffZone', 'staffZoneCustom'),
     availableFrom: $('availableFrom').value,
@@ -292,16 +312,8 @@ $('staffForm').addEventListener('submit', async event => {
 
 $('cancelEdit').addEventListener('click', resetForm);
 $('meetingDate').addEventListener('change', loadAvailability);
-$('staffRole').addEventListener('change', () => {
-  if ($('staffRole').value !== '__custom__') $('staffRoleCustom').value = '';
-  toggleCustom('staffRole', 'staffRoleCustom');
-  if ($('staffRole').value === '__custom__') $('staffRoleCustom').focus();
-});
-$('staffRoleCustom').addEventListener('input', () => {
-  if ($('staffRoleCustom').value.trim()) $('staffRole').value = '__custom__';
-  else if ($('staffRole').value === '__custom__') $('staffRole').value = '';
-  toggleCustom('staffRole', 'staffRoleCustom');
-});
+$('staffRole').addEventListener('change', () => { $('legacyRoleNote').hidden = true; });
+$('roleFilter').addEventListener('change', () => loadPanel().catch(error => showError('panelError', error.message)));
 $('staffZone').addEventListener('change', () => toggleCustom('staffZone', 'staffZoneCustom'));
 $('viewerZone').addEventListener('change', () => { toggleCustom('viewerZone', 'viewerZoneCustom'); loadAvailability(); });
 $('viewerZoneCustom').addEventListener('change', loadAvailability);
@@ -313,7 +325,7 @@ api('/api/me').then(data => {
   if (!data.authenticated) return showLogin();
   csrf = data.csrf;
   showPanel();
-  loadPanel().catch(error => showError('panelError', error.message));
+  fillRoles().then(loadPanel).catch(error => showError('panelError', error.message));
 }).catch(error => {
   showLogin();
   showError('loginError', error.message);
