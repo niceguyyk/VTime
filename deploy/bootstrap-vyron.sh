@@ -3,7 +3,7 @@ set -euo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq ca-certificates curl gnupg git nginx
+apt-get install -y -qq ca-certificates curl gnupg git nginx make g++
 curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/vtime-nodesource-setup.sh
 bash /tmp/vtime-nodesource-setup.sh
 apt-get install -y -qq nodejs
