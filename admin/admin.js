@@ -43,7 +43,10 @@ async function api(url, options = {}) {
 }
 
 function fillTimeZones() {
-  const common = ['UTC', 'Europe/Berlin', 'Europe/London', 'America/New_York', 'America/Los_Angeles', 'Asia/Tokyo', 'Asia/Dubai', 'Asia/Kolkata', 'Australia/Sydney'];
+  const common = ['UTC', 'EDT', 'EST', 'PDT', 'PST', 'CET', 'CEST',
+    ...Array.from({ length: 27 }, (_, i) => `UTC${i - 12 < 0 ? '' : '+'}${i - 12}`),
+    'UTC+5:30', 'UTC+9:30', 'Europe/Berlin', 'Europe/London', 'America/New_York',
+    'America/Los_Angeles', 'Asia/Tokyo', 'Asia/Dubai', 'Asia/Kolkata', 'Australia/Sydney'];
   const all = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [];
   const zones = [...new Set([...common, ...all])];
   const list = $('timeZones');
@@ -54,11 +57,24 @@ function fillTimeZones() {
   }
 }
 
-function currentTime(zone) {
+function fixedOffset(zone) {
+  const names = { UTC: 0, GMT: 0, EDT: -240, EST: -300, PDT: -420, PST: -480, CET: 60, CEST: 120 };
+  if (Object.hasOwn(names, zone.toUpperCase())) return names[zone.toUpperCase()];
+  const match = /^UTC([+-])(\d{1,2})(?::([0-5]\d))?$/i.exec(zone);
+  if (!match) return null;
+  const minutes = Number(match[2]) * 60 + Number(match[3] || 0);
+  return match[1] === '-' ? -minutes : minutes;
+}
+
+function timeInZone(instant, zone) {
   try {
-    return new Intl.DateTimeFormat('en-GB', { timeZone: zone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
+    const offset = fixedOffset(zone);
+    const time = offset === null ? instant : new Date(instant.getTime() + offset * 60000);
+    return new Intl.DateTimeFormat('en-GB', { timeZone: offset === null ? zone : 'UTC', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(time);
   } catch { return '—'; }
 }
+
+function currentTime(zone) { return timeInZone(new Date(), zone); }
 
 function addText(parent, tag, className, value) {
   const element = document.createElement(tag);
@@ -163,7 +179,7 @@ function renderMeeting(data) {
 
 function oneHourLater(iso, zone) {
   const date = new Date(Date.parse(iso) + 60 * 60 * 1000);
-  return new Intl.DateTimeFormat('en-GB', { timeZone: zone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date);
+  return timeInZone(date, zone);
 }
 
 async function loadAvailability() {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateAvailability, isValidDate, isValidTimeZone } from '../src/planner.js';
+import { calculateAvailability, isValidDate, isValidTimeZone, localParts } from '../src/planner.js';
 
 const person = (time_zone, available_from = '13:00:00', available_until = '21:00:00') => ({ time_zone, available_from, available_until });
 
@@ -30,4 +30,17 @@ test('rejects invalid dates and zones', () => {
   assert.equal(isValidDate('2026-02-30'), false);
   assert.equal(isValidTimeZone('Not/A_Zone'), false);
   assert.throws(() => calculateAvailability([], '2026-02-30', 'UTC'));
+});
+
+test('EDT and UTC offsets stay fixed across daylight saving changes', () => {
+  assert.equal(isValidTimeZone('EDT'), true);
+  assert.equal(isValidTimeZone('UTC+5:30'), true);
+  assert.equal(isValidTimeZone('UTC+15'), false);
+  const winter = calculateAvailability([
+    person('Europe/Berlin'), person('EDT')
+  ], '2026-01-13', 'UTC+1');
+  assert.deepEqual(winter.windows.map(({ start, end }) => [start, end]), [['18:00', '21:00']]);
+  const instant = Date.parse('2026-01-13T17:00:00Z');
+  assert.deepEqual(localParts(instant, 'EDT'), { date: '2026-01-13', hour: 13, minute: 0 });
+  assert.deepEqual(localParts(instant, 'UTC+5:30'), { date: '2026-01-13', hour: 22, minute: 30 });
 });

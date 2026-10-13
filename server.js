@@ -86,7 +86,7 @@ function validateStaff(body) {
   const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
   if (!name || name.length > 80) throw new Error('Name must be 1–80 characters.');
   if (!/^\d{17,20}$/.test(discordId)) throw new Error('Discord ID must be 17–20 digits.');
-  if (!isValidTimeZone(timeZone)) throw new Error('Choose a valid IANA time zone.');
+  if (!isValidTimeZone(timeZone)) throw new Error('Choose a valid city, abbreviation, or UTC offset.');
   if (!timePattern.test(availableFrom) || !timePattern.test(availableUntil) || availableFrom >= availableUntil) {
     throw new Error('Choose a valid availability window within one day.');
   }

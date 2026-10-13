@@ -2,8 +2,27 @@ const STEP_MS = 15 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const formatters = new Map();
 
+const fixedNames = { UTC: 0, GMT: 0, EDT: -240, EST: -300, PDT: -420, PST: -480, CET: 60, CEST: 120 };
+
+export function fixedOffset(zone) {
+  if (typeof zone !== 'string') return null;
+  const upper = zone.toUpperCase();
+  if (Object.hasOwn(fixedNames, upper)) return fixedNames[upper];
+  const legacy = /^fixed:(-?\d{1,4})$/.exec(zone);
+  if (legacy) {
+    const minutes = Number(legacy[1]);
+    return minutes >= -720 && minutes <= 840 ? minutes : null;
+  }
+  const match = /^UTC([+-])(\d{1,2})(?::([0-5]\d))?$/i.exec(zone);
+  if (!match) return null;
+  const minutes = Number(match[2]) * 60 + Number(match[3] || 0);
+  const signed = match[1] === '-' ? -minutes : minutes;
+  return signed >= -720 && signed <= 840 ? signed : null;
+}
+
 export function isValidTimeZone(zone) {
   if (typeof zone !== 'string' || zone.length > 80) return false;
+  if (fixedOffset(zone) !== null) return true;
   try {
     new Intl.DateTimeFormat('en', { timeZone: zone });
     return true;
@@ -19,15 +38,18 @@ export function isValidDate(date) {
 }
 
 export function localParts(instant, zone) {
-  let formatter = formatters.get(zone);
+  const offset = fixedOffset(zone);
+  const effectiveZone = offset === null ? zone : 'UTC';
+  const effectiveInstant = offset === null ? instant : instant + offset * 60000;
+  let formatter = formatters.get(effectiveZone);
   if (!formatter) {
     formatter = new Intl.DateTimeFormat('en-GB', {
-      timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit',
+      timeZone: effectiveZone, year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
     });
-    formatters.set(zone, formatter);
+    formatters.set(effectiveZone, formatter);
   }
-  const parts = Object.fromEntries(formatter.formatToParts(new Date(instant))
+  const parts = Object.fromEntries(formatter.formatToParts(new Date(effectiveInstant))
     .filter(part => part.type !== 'literal')
     .map(part => [part.type, Number(part.value)]));
   return {
