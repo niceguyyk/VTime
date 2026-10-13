@@ -1,4 +1,4 @@
-vtime.vyrontechnologies.com {
+your-domain.example {
     encode zstd gzip
     reverse_proxy 127.0.0.1:3000
 }
