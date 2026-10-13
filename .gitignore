@@ -1,2 +1,6 @@
 .playwright-cli/
 vtime-site.tar.gz
+node_modules/
+.env
+.env.*
+!.env.example

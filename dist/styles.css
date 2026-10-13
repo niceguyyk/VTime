@@ -25,3 +25,7 @@ h1{color:#f0f0ed}
 .copy-button:hover{background:#4b3d6d}
 .result-foot{border-color:#55486d;color:#b2abc2}
 .error-message{color:#ffaaa8}
+.admin-link{position:fixed;right:22px;bottom:22px;z-index:20;width:46px;height:46px;display:grid;place-items:center;border:1px solid #554575;border-radius:12px;background:#30284b;color:#c9b9ff;box-shadow:0 12px 30px #0005;text-decoration:none;transition:background .2s,transform .2s,border-color .2s}
+.admin-link:hover{background:#40335f;border-color:#9a7af1;transform:translateY(-3px)}
+.admin-link:focus-visible{outline:2px solid #b99fff;outline-offset:3px}
+.admin-link svg{width:21px;height:21px}
