@@ -65,7 +65,7 @@ async function fillRoles() {
 
 function fillTimeZones() {
   const short = [
-    ['UTC', 'UTC'], ['EDT', 'EDT · UTC−4'], ['EST', 'EST · UTC−5'],
+    ['UTC', 'UTC'], ['BST', 'BST · UTC+1'], ['EDT', 'EDT · UTC−4'], ['EST', 'EST · UTC−5'],
     ['MDT', 'MDT · UTC−6'], ['MST', 'MST · UTC−7'],
     ['PDT', 'PDT · UTC−7'], ['PST', 'PST · UTC−8'],
     ['CET', 'CET · UTC+1'], ['CEST', 'CEST · UTC+2'],
@@ -133,7 +133,7 @@ function selectRole(role) {
 }
 
 function fixedOffset(zone) {
-  const names = { UTC: 0, GMT: 0, EDT: -240, EST: -300, MDT: -360, MST: -420, PDT: -420, PST: -480, CET: 60, CEST: 120 };
+  const names = { UTC: 0, GMT: 0, BST: 60, EDT: -240, EST: -300, MDT: -360, MST: -420, PDT: -420, PST: -480, CET: 60, CEST: 120 };
   if (Object.hasOwn(names, zone.toUpperCase())) return names[zone.toUpperCase()];
   const match = /^UTC([+-])(\d{1,2})(?::([0-5]\d))?$/i.exec(zone);
   if (!match) return null;

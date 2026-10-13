@@ -35,6 +35,7 @@ test('rejects invalid dates and zones', () => {
 test('EDT and UTC offsets stay fixed across daylight saving changes', () => {
   assert.equal(isValidTimeZone('EDT'), true);
   assert.equal(isValidTimeZone('MDT'), true);
+  assert.equal(isValidTimeZone('BST'), true);
   assert.equal(isValidTimeZone('UTC+5:30'), true);
   assert.equal(isValidTimeZone('UTC+15'), false);
   const winter = calculateAvailability([
@@ -44,5 +45,6 @@ test('EDT and UTC offsets stay fixed across daylight saving changes', () => {
   const instant = Date.parse('2026-01-13T17:00:00Z');
   assert.deepEqual(localParts(instant, 'EDT'), { date: '2026-01-13', hour: 13, minute: 0 });
   assert.deepEqual(localParts(instant, 'MDT'), { date: '2026-01-13', hour: 11, minute: 0 });
+  assert.deepEqual(localParts(instant, 'BST'), { date: '2026-01-13', hour: 18, minute: 0 });
   assert.deepEqual(localParts(instant, 'UTC+5:30'), { date: '2026-01-13', hour: 22, minute: 30 });
 });

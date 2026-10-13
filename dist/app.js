@@ -5,7 +5,7 @@ const zones = [
     ['Asia/Kolkata', 'Mumbai · IST'], ['Australia/Sydney', 'Sydney · AEST/AEDT']
   ]},
   { group: 'Fixed abbreviations', items: [
-    ['fixed:-240', 'EDT · UTC−4'], ['fixed:-300', 'EST · UTC−5'], ['fixed:-360', 'CST · UTC−6'],
+    ['fixed:60', 'BST · UTC+1'], ['fixed:-240', 'EDT · UTC−4'], ['fixed:-300', 'EST · UTC−5'], ['fixed:-360', 'CST · UTC−6'],
     ['fixed:-420', 'MST · UTC−7'], ['fixed:-480', 'PST · UTC−8'], ['fixed:0', 'UTC · UTC+0']
   ]},
   { group: 'Fixed UTC offsets', items: Array.from({ length: 27 }, (_, i) => {
@@ -42,7 +42,7 @@ function saveTimeZone(zone) {
 
 function converterZone(zone) {
   if (zone.startsWith('fixed:')) return zone;
-  const abbreviations = { UTC: 0, GMT: 0, EDT: -240, EST: -300, MDT: -360, MST: -420, PDT: -420, PST: -480, CET: 60, CEST: 120 };
+  const abbreviations = { UTC: 0, GMT: 0, BST: 60, EDT: -240, EST: -300, MDT: -360, MST: -420, PDT: -420, PST: -480, CET: 60, CEST: 120 };
   if (Object.hasOwn(abbreviations, zone)) return `fixed:${abbreviations[zone]}`;
   const offset = /^UTC([+-])(\d{1,2})(?::([0-5]\d))?$/i.exec(zone);
   if (offset) return `fixed:${(offset[1] === '-' ? -1 : 1) * (Number(offset[2]) * 60 + Number(offset[3] || 0))}`;
@@ -51,13 +51,16 @@ function converterZone(zone) {
 }
 
 function restoreTimeZone() {
-  const zone = converterZone(savedTimeZone());
+  const saved = savedTimeZone();
+  const zone = converterZone(saved);
   if (!zone) return;
   if (![...toSelect.options].some(option => option.value === zone)) {
     const group = toSelect.querySelector(zone.startsWith('fixed:') ? 'optgroup:last-child' : 'optgroup:first-child');
-    group.append(new Option(zone.startsWith('fixed:') ? savedTimeZone() : zone, zone));
+    group.append(new Option(zone.startsWith('fixed:') ? saved : zone, zone));
   }
-  toSelect.value = zone;
+  const exact = [...toSelect.options].find(option => option.value === zone &&
+    (saved === 'BST' ? option.textContent.startsWith('BST') : saved === 'UTC+1' ? option.textContent === 'UTC+1' : true));
+  if (exact) exact.selected = true;
 }
 
 for (const select of [fromSelect, toSelect]) {
@@ -77,7 +80,7 @@ for (const select of [fromSelect, toSelect]) {
 const now = new Date();
 dateInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 fromSelect.value = 'fixed:-240';
-toSelect.value = 'fixed:60';
+[...toSelect.options].find(option => option.textContent === 'UTC+1').selected = true;
 restoreTimeZone();
 
 function partsAt(instant, zone) {
@@ -163,7 +166,7 @@ function update() {
 }
 
 for (const element of [dateInput, timeInput, fromSelect, toSelect]) element.addEventListener('change', update);
-toSelect.addEventListener('change', () => saveTimeZone(toSelect.value));
+toSelect.addEventListener('change', () => saveTimeZone(toSelect.selectedOptions[0].textContent.startsWith('BST') ? 'BST' : toSelect.value));
 for (const element of [dateInput, timeInput]) element.addEventListener('input', update);
 $('swap').addEventListener('click', () => {
   const previous = fromSelect.value;
