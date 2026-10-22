@@ -5,7 +5,7 @@ import { ArrowLeftRight, Check, Clock3, Copy, Database, Globe2 } from 'lucide-re
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { ZonePicker } from '@/components/zone-picker';
@@ -74,56 +74,58 @@ export function ConverterApp() {
   }
 
   return (
-    <main ref={root} className="mx-auto flex min-h-svh w-full max-w-5xl flex-col px-5 pb-24 pt-7 sm:px-8 sm:pt-10">
-      <header data-reveal className="flex items-center justify-between border-b border-border pb-6">
-        <a href="/" className="flex items-center gap-3 text-lg font-semibold tracking-tight" aria-label="VTime home">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Clock3 size={18} /></span>
-          VTime<span className="-ml-2 text-primary">.</span>
+    <main ref={root} className="mx-auto flex min-h-svh w-full max-w-6xl flex-col px-5 pb-24 pt-6 sm:px-8 sm:pt-8">
+      <header data-reveal className="flex items-center justify-between border-b border-border pb-5">
+        <a href="/" className="flex items-center gap-2 text-base font-semibold tracking-tight" aria-label="VTime home">
+          <span className="flex size-8 items-center justify-center rounded-md bg-secondary text-foreground"><Clock3 size={17} /></span>
+          VTime<span className="-ml-2">.</span>
         </a>
-        <Badge variant="outline" className="font-mono text-[10px] tracking-[0.16em]">TIME UTILITY</Badge>
+        <Badge variant="outline" className="text-xs font-normal">Time utility</Badge>
       </header>
 
-      <section className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center py-10 sm:py-12" aria-labelledby="page-title">
-        <div data-reveal className="mb-8">
-          <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"><Globe2 size={14} /> Across time zones</div>
-          <h1 id="page-title" className="text-4xl font-semibold tracking-tight sm:text-5xl">Time, translated.</h1>
-          <p className="mt-3 text-sm text-muted-foreground sm:text-base">Find the right hour anywhere. Fixed offsets and daylight saving aware cities, together in one place.</p>
+      <section className="mx-auto w-full max-w-4xl py-10 sm:py-14" aria-labelledby="page-title">
+        <div data-reveal className="mb-6">
+          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground"><Globe2 size={14} /> Across time zones</div>
+          <h1 id="page-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">Time zone converter</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Find the right hour anywhere.</p>
         </div>
 
-        <Card data-reveal className="overflow-visible">
-          <CardHeader className="border-b border-border pb-5">
-            <CardTitle className="text-base">Time zone converter</CardTitle>
-            <CardDescription>Enter a time, then choose where it starts and where it lands.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-6 pt-5">
-            <FieldGroup className="grid gap-4 sm:grid-cols-2">
-              <Field><FieldLabel htmlFor="date">Date</FieldLabel><Input id="date" type="date" value={date} onChange={event => setDate(event.target.value)} required /></Field>
-              <Field><FieldLabel htmlFor="time">Time</FieldLabel><Input id="time" type="time" value={time} onChange={event => setTime(event.target.value)} required /></Field>
-            </FieldGroup>
-            <div className="grid items-end gap-3 sm:grid-cols-[1fr_auto_1fr]">
+        <div className="grid gap-4 md:grid-cols-2 md:items-stretch">
+          <Card data-reveal className="overflow-visible">
+            <CardHeader>
+              <CardTitle>Convert a time</CardTitle>
+              <CardDescription>Choose a date, time, and two time zones.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+              <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                <Field><FieldLabel htmlFor="date">Date</FieldLabel><Input id="date" type="date" value={date} onChange={event => setDate(event.target.value)} required /></Field>
+                <Field><FieldLabel htmlFor="time">Time</FieldLabel><Input id="time" type="time" value={time} onChange={event => setTime(event.target.value)} required /></Field>
+              </FieldGroup>
               <Field><FieldLabel htmlFor="fromZone">From</FieldLabel><ZonePicker id="fromZone" value={fromZone} onChange={setFromZone} /></Field>
-              <Button variant="outline" size="icon" aria-label="Swap time zones" title="Swap time zones" onClick={swap} className="mb-0.5 justify-self-center"><ArrowLeftRight /></Button>
+              <div className="-my-2 flex justify-center"><Button variant="outline" size="icon-sm" aria-label="Swap time zones" title="Swap time zones" onClick={swap}><ArrowLeftRight /></Button></div>
               <Field><FieldLabel htmlFor="toZone">To · your time zone</FieldLabel><ZonePicker id="toZone" value={toZone} onChange={changeTarget} /></Field>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+            <CardFooter className="text-xs text-muted-foreground">City zones adjust for daylight saving.</CardFooter>
+          </Card>
 
-        <Card data-reveal className="mt-4 border-primary/20 bg-primary/5" aria-live="polite">
-          <CardHeader className="flex-row items-center justify-between gap-3">
-            <div><CardDescription className="mb-1 text-[11px] font-medium uppercase tracking-[0.14em]">Converted time</CardDescription><CardTitle>In {toZone || 'your time zone'}</CardTitle></div>
-            <Button variant="outline" size="icon" aria-label={copied ? 'Copied' : 'Copy result'} title="Copy result" onClick={copy} disabled={!result}>{copied ? <Check /> : <Copy />}</Button>
-          </CardHeader>
-          <CardContent ref={resultRef}>
-            <div className="text-5xl font-semibold tabular-nums tracking-tighter sm:text-6xl">{result?.time || '—'}</div>
-            <div className="mt-1 text-sm text-muted-foreground">{result?.date || 'Choose a valid date and time'}</div>
-            {result && <p className="mt-5 border-t border-border pt-4 text-xs text-muted-foreground">{fromZone} → {toZone} · {result.difference}{result.ambiguous ? ' · First occurrence of a repeated hour used.' : ''}</p>}
-          </CardContent>
-        </Card>
+          <Card data-reveal aria-live="polite">
+            <CardHeader>
+              <CardTitle>Converted time</CardTitle>
+              <CardDescription>In {toZone || 'your time zone'}</CardDescription>
+            </CardHeader>
+            <CardContent ref={resultRef} className="flex min-h-44 flex-1 flex-col justify-center">
+              <div className="text-5xl font-semibold tabular-nums tracking-tight sm:text-6xl">{result?.time || '—'}</div>
+              <div className="mt-2 text-sm text-muted-foreground">{result?.date || 'Choose a valid date and time'}</div>
+              {result && <p className="mt-5 text-xs text-muted-foreground">{fromZone} → {toZone} · {result.difference}{result.ambiguous ? ' · First occurrence of a repeated hour used.' : ''}</p>}
+            </CardContent>
+            <CardFooter><Button className="w-full" onClick={copy} disabled={!result}>{copied ? <Check data-icon="inline-start" /> : <Copy data-icon="inline-start" />}{copied ? 'Copied' : 'Copy result'}</Button></CardFooter>
+          </Card>
+        </div>
         {error && <Alert variant="destructive" className="mt-4"><AlertDescription>{error}</AlertDescription></Alert>}
-        <p data-reveal className="mt-5 text-center text-xs text-muted-foreground">City zones adjust for daylight saving. Short zones and UTC offsets stay fixed.</p>
+        <p data-reveal className="mt-5 text-center text-xs text-muted-foreground">Short zones and UTC offsets stay fixed.</p>
       </section>
 
-      <a href="/admin" className="fixed bottom-5 right-5 z-10 flex size-11 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring" aria-label="Open staff planner" title="Staff planner"><Database size={19} /></a>
+      <a href="/admin" className="fixed bottom-5 right-5 z-10 flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring" aria-label="Open staff planner" title="Staff planner"><Database size={18} /></a>
     </main>
   );
 }

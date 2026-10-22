@@ -192,9 +192,9 @@ export function AdminApp() {
 
   return (
     <main ref={root} className="mx-auto min-h-svh w-full max-w-6xl px-5 pb-16 pt-7 sm:px-8 sm:pt-10">
-      <header data-reveal className="flex items-center justify-between gap-4 border-b border-border pb-6">
-        <a href="/" className="flex items-center gap-3 text-lg font-semibold tracking-tight"><span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Clock3 size={18} /></span>VTime<span className="-ml-2 text-primary">.</span></a>
-        <div className="flex items-center gap-3"><Badge variant="outline" className="hidden font-mono text-[10px] tracking-[0.12em] sm:inline-flex">PRIVATE STAFF PANEL</Badge>{auth === 'signed-in' && <Button variant="ghost" size="sm" onClick={logout}><LogOut data-icon="inline-start" /> Sign out</Button>}</div>
+      <header data-reveal className="flex items-center justify-between gap-4 border-b border-border pb-5">
+        <a href="/" className="flex items-center gap-2 text-base font-semibold tracking-tight"><span className="flex size-8 items-center justify-center rounded-md bg-secondary text-foreground"><Clock3 size={17} /></span>VTime<span className="-ml-2">.</span></a>
+        <div className="flex items-center gap-3"><Badge variant="outline" className="hidden text-xs font-normal sm:inline-flex">Staff panel</Badge>{auth === 'signed-in' && <Button variant="ghost" size="sm" onClick={logout}><LogOut data-icon="inline-start" /> Sign out</Button>}</div>
       </header>
 
       {auth === 'loading' ? <div className="mx-auto mt-24 max-w-sm"><Skeleton className="h-56 w-full" /></div> : auth === 'signed-out' ? (
