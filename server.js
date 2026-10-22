@@ -8,7 +8,6 @@ import { STAFF_ROLES, isStaffRole, isRoleGroup, matchesRoleGroup } from './src/r
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(root, 'dist');
-const admin = path.join(root, 'admin');
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || '127.0.0.1';
 const password = process.env.ADMIN_PASSWORD;
@@ -204,8 +203,8 @@ app.get('/api/availability', requireLogin, (req, res) => {
   } catch (error) { sendDatabaseError(error, res); }
 });
 
-app.get('/admin', (_req, res) => res.sendFile(path.join(admin, 'index.html')));
-app.use('/admin', express.static(admin, { index: false }));
+app.get('/admin', (_req, res) => res.sendFile(path.join(dist, 'admin', 'index.html')));
+app.use('/admin', express.static(path.join(dist, 'admin'), { index: false }));
 app.use(express.static(dist));
 app.use((error, _req, res, _next) => {
   console.error('Request failed:', error.message);
